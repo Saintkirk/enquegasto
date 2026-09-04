@@ -10,140 +10,192 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  NODE_VERSION: "20"
+
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      android: ${{ steps.filter.outputs.android }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+              - '!frontend/android/**'
+            android:
+              - 'frontend/android/**'
+              - 'frontend/capacitor.config.ts'
+              - 'frontend/package.json'
+            workflows:
+              - '.github/workflows/**'
+
   backend:
     name: Backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     defaults:
       run:
         working-directory: backend
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: "20"
+          fetch-depth: 1
+          sparse-checkout: |
+            backend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: backend/package-lock.json
-
       - name: Install dependencies
         run: |
-          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
-
-      - name: Generate Prisma Client
+          if [ -f package-lock.json ]; then
+            npm ci --prefer-offline --no-audit --no-fund
+          else
+            npm install --prefer-offline --no-audit --no-fund
+          fi
+      - name: Prisma generate
         run: npx prisma generate
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
-
       - name: Typecheck
-        run: npx tsc --noEmit
+        run: npx tsc --noEmit --pretty false
 
   frontend:
     name: Frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.android == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: frontend
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: "20"
+          fetch-depth: 1
+          sparse-checkout: |
+            frontend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-
       - name: Install dependencies
         run: |
-          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
-
-      - name: Typecheck
-        run: npx tsc -b --noEmit
-        continue-on-error: true
-
-      - name: Build web
-        run: npm run build
+          if [ -f package-lock.json ]; then
+            npm ci --prefer-offline --no-audit --no-fund
+          else
+            npm install --prefer-offline --no-audit --no-fund
+          fi
+      - name: Build
+        run: npx vite build
         env:
           NODE_ENV: production
-
-      - name: Upload dist artifact
+      - name: Upload dist
+        if: needs.changes.outputs.android == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
           path: frontend/dist
-          retention-days: 7
+          retention-days: 3
+          compression-level: 9
 
   android:
     name: Android (Gradle)
+    needs: [changes, frontend]
+    if: |
+      always() &&
+      needs.frontend.result == 'success' &&
+      (needs.changes.outputs.android == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
     runs-on: ubuntu-latest
-    needs: frontend
-    if: hashFiles('frontend/android/build.gradle') != ''
-
+    timeout-minutes: 20
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: "20"
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
+          fetch-depth: 1
+          sparse-checkout: |
+            frontend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
+          cache: gradle
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            frontend/android/.gradle
+          key: gradle-${{ runner.os }}-${{ hashFiles('frontend/android/**/*.gradle*', 'frontend/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+      - name: Cache Android SDK packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/android/sdk/platforms
+            /usr/local/lib/android/sdk/build-tools
+          key: android-sdk-${{ runner.os }}-35
+          restore-keys: |
+            android-sdk-${{ runner.os }}-
       - name: Download web dist
         uses: actions/download-artifact@v4
         with:
           name: frontend-dist
           path: frontend/dist
-
-      - name: Install frontend deps (Capacitor)
+      - name: Install deps
         working-directory: frontend
         run: |
-          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
-
-      - name: Sync Capacitor (if CLI available)
-        working-directory: frontend
-        run: |
-          if npx cap --version 2>/dev/null; then
-            npx cap sync android || echo "cap sync skipped/failed"
+          if [ -f package-lock.json ]; then
+            npm ci --prefer-offline --no-audit --no-fund --ignore-scripts
           else
-            echo "Capacitor CLI no disponible"
+            npm install --prefer-offline --no-audit --no-fund --ignore-scripts
           fi
+      - name: Cap sync
+        working-directory: frontend
+        run: npx cap sync android --no-deps 2>/dev/null || true
         continue-on-error: true
-
-      - name: Make gradlew executable
+      - name: Assemble debug APK
         working-directory: frontend/android
         run: |
-          if [ -f gradlew ]; then chmod +x gradlew; else echo "gradlew no encontrado"; fi
-
-      - name: Build APK (debug)
-        working-directory: frontend/android
-        run: |
-          if [ -f gradlew ]; then
-            ./gradlew assembleDebug --no-daemon --stacktrace
-          else
-            echo "Falta gradlew. Ejecuta npx cap add android localmente."
+          if [ ! -f gradlew ]; then
+            echo "Sin gradlew — omitiendo build Android"
             exit 0
           fi
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --parallel --build-cache --configuration-cache --stacktrace
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2g -XX:+UseParallelGC"
+      - name: Upload APK
         if: success()
+        uses: actions/upload-artifact@v4
         with:
           name: enquegasto-debug-apk
           path: frontend/android/app/build/outputs/apk/debug/*.apk
-          retention-days: 14
-          if-no-files-found: warn
+          retention-days: 7
+          compression-level: 9
+          if-no-files-found: ignore

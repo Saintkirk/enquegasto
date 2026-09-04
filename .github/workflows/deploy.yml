@@ -11,49 +11,48 @@ concurrency:
 
 jobs:
   deploy-backend:
-    name: Deploy Backend (Render)
+    name: Render
     runs-on: ubuntu-latest
-
+    timeout-minutes: 3
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Trigger Render deploy hook
+      - name: Trigger Render
         env:
           HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
           if [ -z "$HOOK" ]; then
-            echo "RENDER_DEPLOY_HOOK_URL no configurado."
+            echo "Sin RENDER_DEPLOY_HOOK_URL — usa auto-deploy de Render."
             exit 0
           fi
-          curl -fsS -X POST "$HOOK"
-          echo "Deploy de backend solicitado."
+          curl -fsS -m 15 -X POST "$HOOK"
+          echo "Render deploy solicitado."
 
   deploy-frontend:
-    name: Deploy Frontend (Vercel)
+    name: Vercel
     runs-on: ubuntu-latest
-
+    timeout-minutes: 12
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            frontend
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
-
-      - name: Deploy to Vercel
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Deploy
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: frontend
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
-            echo "VERCEL_TOKEN no configurado."
+            echo "Sin VERCEL_TOKEN — usa auto-deploy de Vercel."
             exit 0
           fi
-          npm install -g vercel@latest
-          cd frontend
+          npm install -g vercel@latest --no-audit --no-fund
           vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           vercel build --prod --token="$VERCEL_TOKEN"
           vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

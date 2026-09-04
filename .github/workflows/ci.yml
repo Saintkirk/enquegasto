@@ -64,11 +64,17 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - name: Install dependencies
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci --prefer-offline --no-audit --no-fund
-          else
-            npm install --prefer-offline --no-audit --no-fund
-          fi
+          if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --no-fund; else npm install --prefer-offline --no-audit --no-fund; fi
+      - name: Cache Prisma engines
+        uses: actions/cache@v4
+        with:
+          path: |
+            backend/node_modules/.prisma
+            backend/node_modules/@prisma/engines
+            ~/.cache/prisma
+          key: prisma-${{ runner.os }}-${{ hashFiles('backend/package-lock.json', 'backend/prisma/schema.prisma') }}
+          restore-keys: |
+            prisma-${{ runner.os }}-
       - name: Prisma generate
         run: npx prisma generate
         env:
@@ -98,11 +104,16 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci --prefer-offline --no-audit --no-fund
-          else
-            npm install --prefer-offline --no-audit --no-fund
-          fi
+          if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --no-fund; else npm install --prefer-offline --no-audit --no-fund; fi
+      - name: Cache Vite
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/node_modules/.vite
+            frontend/node_modules/.cache
+          key: vite-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json', 'frontend/vite.config.ts') }}
+          restore-keys: |
+            vite-${{ runner.os }}-
       - name: Build
         run: npx vite build
         env:
@@ -141,10 +152,8 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: gradle
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Cache Gradle
-        uses: actions/cache@v4
+      - uses: android-actions/setup-android@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -153,8 +162,7 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('frontend/android/**/*.gradle*', 'frontend/android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
-      - name: Cache Android SDK packages
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: |
             /usr/local/lib/android/sdk/platforms
@@ -162,37 +170,27 @@ jobs:
           key: android-sdk-${{ runner.os }}-35
           restore-keys: |
             android-sdk-${{ runner.os }}-
-      - name: Download web dist
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: frontend-dist
           path: frontend/dist
       - name: Install deps
         working-directory: frontend
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci --prefer-offline --no-audit --no-fund --ignore-scripts
-          else
-            npm install --prefer-offline --no-audit --no-fund --ignore-scripts
-          fi
-      - name: Cap sync
+          if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --no-fund --ignore-scripts; else npm install --prefer-offline --no-audit --no-fund --ignore-scripts; fi
+      - run: npx cap sync android --no-deps 2>/dev/null || true
         working-directory: frontend
-        run: npx cap sync android --no-deps 2>/dev/null || true
         continue-on-error: true
       - name: Assemble debug APK
         working-directory: frontend/android
         run: |
-          if [ ! -f gradlew ]; then
-            echo "Sin gradlew — omitiendo build Android"
-            exit 0
-          fi
+          if [ ! -f gradlew ]; then echo "Sin gradlew"; exit 0; fi
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --parallel --build-cache --configuration-cache --stacktrace
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2g -XX:+UseParallelGC"
-      - name: Upload APK
+      - uses: actions/upload-artifact@v4
         if: success()
-        uses: actions/upload-artifact@v4
         with:
           name: enquegasto-debug-apk
           path: frontend/android/app/build/outputs/apk/debug/*.apk

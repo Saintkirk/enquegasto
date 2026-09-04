@@ -2,12 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -30,14 +30,15 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
 
       - name: Generate Prisma Client
         run: npx prisma generate
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci?schema=public
 
-      - name: Typecheck / Build
+      - name: Typecheck
         run: npx tsc --noEmit
 
   frontend:
@@ -59,13 +60,90 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
 
       - name: Typecheck
         run: npx tsc -b --noEmit
         continue-on-error: true
 
-      - name: Build
+      - name: Build web
         run: npm run build
         env:
           NODE_ENV: production
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+
+  android:
+    name: Android (Gradle)
+    runs-on: ubuntu-latest
+    needs: frontend
+    if: hashFiles('frontend/android/build.gradle') != ''
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Download web dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Install frontend deps (Capacitor)
+        working-directory: frontend
+        run: |
+          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+
+      - name: Sync Capacitor (if CLI available)
+        working-directory: frontend
+        run: |
+          if npx cap --version 2>/dev/null; then
+            npx cap sync android || echo "cap sync skipped/failed"
+          else
+            echo "Capacitor CLI no disponible"
+          fi
+        continue-on-error: true
+
+      - name: Make gradlew executable
+        working-directory: frontend/android
+        run: |
+          if [ -f gradlew ]; then chmod +x gradlew; else echo "gradlew no encontrado"; fi
+
+      - name: Build APK (debug)
+        working-directory: frontend/android
+        run: |
+          if [ -f gradlew ]; then
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          else
+            echo "Falta gradlew. Ejecuta npx cap add android localmente."
+            exit 0
+          fi
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: enquegasto-debug-apk
+          path: frontend/android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+          if-no-files-found: warn

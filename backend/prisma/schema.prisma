@@ -1,0 +1,78 @@
+// Prisma schema for EnQuéGasto
+// Base de datos PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  name              String?
+  password          String?
+  provider          String   @default("local")
+  providerId        String?
+  avatarUrl         String?
+  liquidSalary      Int?
+  currency          String   @default("CLP")
+  locale            String   @default("es-CL")
+  refreshToken      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  lastLoginAt       DateTime?
+  subscriptions     Subscription[]
+  @@index([email])
+  @@index([provider, providerId])
+  @@map("users")
+}
+
+model Platform {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  category        String
+  logoUrl         String?
+  websiteUrl      String?
+  description     String?
+  priceMonthly    Int?
+  priceYearly     Int?
+  priceFamily     Int?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  subscriptions   Subscription[]
+  @@index([category])
+  @@index([slug])
+  @@map("platforms")
+}
+
+model Subscription {
+  id              String   @id @default(cuid())
+  userId          String
+  platformId      String?
+  name            String
+  amount          Int
+  billingCycle    String
+  nextBillingDate DateTime?
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  isActive        Boolean  @default(true)
+  isZombie        Boolean  @default(false)
+  lastUsedAt      DateTime?
+  usageFrequency  String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform        Platform? @relation(fields: [platformId], references: [id], onDelete: SetNull)
+  @@index([userId])
+  @@index([platformId])
+  @@index([isActive])
+  @@index([isZombie])
+  @@map("subscriptions")
+}

@@ -1,0 +1,26 @@
+{
+  "name": "EnQuéGasto",
+  "short_name": "EnQuéGasto",
+  "description": "Para que no te preguntes en qué gasté mi plata a fin de mes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#e11d48",
+  "orientation": "portrait-primary",
+  "lang": "es-CL",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

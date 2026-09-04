@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sin conexión — EnQuéGasto</title>
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; text-align: center; padding: 24px; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px; max-width: 360px; }
+    button { background: #e11d48; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div style="font-size:48px">📡</div>
+    <h1>Sin conexión</h1>
+    <p>No hay internet ahora. Revisa tu red y vuelve a intentar.</p>
+    <button onclick="location.reload()">Reintentar</button>
+  </div>
+</body>
+</html>

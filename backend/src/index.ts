@@ -87,11 +87,13 @@ async function startServer() {
     } else {
       console.warn('⚠️  DATABASE_URL no configurada o inválida.');
     }
-    app.listen(env.PORT, () => {
+
+    // 0.0.0.0 = accesible desde el celular en la misma WiFi
+    app.listen(env.PORT, '0.0.0.0', () => {
       console.log('');
       console.log('🚀 EnQuéGasto Backend');
       console.log(`   Ambiente: ${env.NODE_ENV}`);
-      console.log(`   Puerto:   ${env.PORT}`);
+      console.log(`   Puerto:   ${env.PORT} (0.0.0.0 — LAN/móvil)`);
       console.log('');
     });
   } catch (error) {

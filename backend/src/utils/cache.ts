@@ -1,14 +1,10 @@
 /**
- * Cache en memoria con TTL
- * Ideal para catálogo de plataformas (datos casi estáticos)
+ * Cache en memoria simple para catálogo de plataformas
  */
 
-interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
-}
+type Entry<T> = { value: T; expiresAt: number };
 
-const store = new Map<string, CacheEntry<unknown>>();
+const store = new Map<string, Entry<unknown>>();
 
 export function cacheGet<T>(key: string): T | null {
   const entry = store.get(key);
@@ -20,22 +16,10 @@ export function cacheGet<T>(key: string): T | null {
   return entry.value as T;
 }
 
-export function cacheSet<T>(key: string, value: T, ttlMs: number): void {
+export function cacheSet<T>(key: string, value: T, ttlMs = 5 * 60 * 1000): void {
   store.set(key, { value, expiresAt: Date.now() + ttlMs });
 }
 
-export function cacheDel(prefix?: string): void {
-  if (!prefix) {
-    store.clear();
-    return;
-  }
-  for (const key of store.keys()) {
-    if (key.startsWith(prefix)) store.delete(key);
-  }
+export function cacheDel(key: string): void {
+  store.delete(key);
 }
-
-/** TTL por defecto */
-export const CACHE_TTL = {
-  platforms: 10 * 60 * 1000,
-  categories: 15 * 60 * 1000,
-};

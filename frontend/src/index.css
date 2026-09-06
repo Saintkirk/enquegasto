@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/* EnQuéGasto — base + motion-safe polish */
+:root {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #0f172a;
+  background-color: #faf9f8;
+  -webkit-font-smoothing: antialiased;
+  --eqg-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --eqg-duration: 200ms;
+}
+
+.font-display {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+.currency {
+  font-variant-numeric: tabular-nums;
+}
+
+.eqg-grain {
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px;
+  mix-blend-mode: multiply;
+  contain: paint;
+}
+
+@keyframes eqg-pulse {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(1.08); }
+}
+.eqg-pulse {
+  animation: eqg-pulse 2.2s var(--eqg-ease) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes eqg-progress {
+  0% { transform: translateX(-100%) scaleX(0.4); }
+  50% { transform: translateX(40%) scaleX(0.65); }
+  100% { transform: translateX(250%) scaleX(0.4); }
+}
+.eqg-progress {
+  width: 100%;
+  transform-origin: left center;
+  animation: eqg-progress 1.4s var(--eqg-ease) infinite;
+  will-change: transform;
+}
+
+.eqg-transition {
+  transition-property: transform, opacity, background-color, color, border-color, box-shadow;
+  transition-duration: var(--eqg-duration);
+  transition-timing-function: var(--eqg-ease);
+}
+
+.eqg-chart {
+  contain: layout style;
+  content-visibility: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --eqg-duration: 0.01ms; }
+  .eqg-pulse, .eqg-progress { animation: none; will-change: auto; }
+  .eqg-progress { transform: none; width: 70%; }
+  .eqg-transition, .eqg-transition * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

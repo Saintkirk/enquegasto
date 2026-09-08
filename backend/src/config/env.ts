@@ -11,7 +11,6 @@ export const env = {
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
   
-  // Variables de Passport asignadas de forma nativa
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || 'MOCK_ID',
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || 'MOCK_SECRET',
   GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3001/api/auth/google/callback',
@@ -19,5 +18,11 @@ export const env = {
   APPLE_TEAM_ID: process.env.APPLE_TEAM_ID || '',
   APPLE_KEY_ID: process.env.APPLE_KEY_ID || '',
   APPLE_PRIVATE_KEY_PATH: process.env.APPLE_PRIVATE_KEY_PATH || '',
-  APPLE_CALLBACK_URL: process.env.APPLE_CALLBACK_URL || ''
+  APPLE_CALLBACK_URL: process.env.APPLE_CALLBACK_URL || '',
+
+  // AÑADE ESTAS LÍNEAS PARA EL CORREO:
+  SMTP_HOST: process.env.SMTP_HOST || '://gmail.com',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),
+  SMTP_USER: process.env.SMTP_USER || '',
+  SMTP_PASS: process.env.SMTP_PASS || ''
 };

@@ -5,7 +5,7 @@ services:
     runtime: node
     plan: free
     # SE CORRIGE: Se añade "cd backend" para que encuentre los archivos y el archivo .env se genera automáticamente con envVars
-    buildCommand: cd backend && npm install && npx prisma generate && npm run build
+    buildCommand: cd backend && npm install --production=false && npx prisma generate && npm run build
     # SE CORRIGE: Se añade "cd backend" también para arrancar el servicio en producción
     startCommand: cd backend && npx prisma migrate deploy && node dist/index.js
     envVars:

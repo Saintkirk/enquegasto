@@ -20,9 +20,9 @@ export const env = {
   APPLE_PRIVATE_KEY_PATH: process.env.APPLE_PRIVATE_KEY_PATH || '',
   APPLE_CALLBACK_URL: process.env.APPLE_CALLBACK_URL || '',
 
-  // AÑADE ESTAS LÍNEAS PARA EL CORREO:
-  SMTP_HOST: process.env.SMTP_HOST || '://gmail.com',
+  SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),
   SMTP_USER: process.env.SMTP_USER || '',
-  SMTP_PASS: process.env.SMTP_PASS || ''
+  SMTP_PASS: process.env.SMTP_PASS || '',
+  EMAIL_FROM: process.env.EMAIL_FROM || 'no-reply@enquegasto.cl' // <- AGREGA ESTA LÍNEA FINAL
 };

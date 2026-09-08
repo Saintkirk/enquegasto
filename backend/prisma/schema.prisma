@@ -4,11 +4,11 @@
 generator client {
   provider = "prisma-client-js"
 }
-
 datasource db {
   provider = "postgresql"
-  url      = "postgresql://postgres.rclgkfeayuoirujkdzax:gLRuvmuhJQiXm7jI@://supabase.com"
+  url      = env("DATABASE_URL")
 }
+
 
 
 model User {

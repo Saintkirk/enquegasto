@@ -4,8 +4,10 @@ services:
     name: enquegasto-api
     runtime: node
     plan: free
-    buildCommand: npm install && npx prisma generate && npm run build
-    startCommand: npx prisma migrate deploy && node dist/index.js
+    # SE CORRIGE: Se añade "cd backend" para que encuentre los archivos y el archivo .env se genera automáticamente con envVars
+    buildCommand: cd backend && npm install && npx prisma generate && npm run build
+    # SE CORRIGE: Se añade "cd backend" también para arrancar el servicio en producción
+    startCommand: cd backend && npx prisma migrate deploy && node dist/index.js
     envVars:
       - key: NODE_ENV
         value: production

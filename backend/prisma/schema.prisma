@@ -7,8 +7,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = "postgresql://postgres.rclgkfeayuoirujkdzax:gLRuvmuhJQiXm7jI@://supabase.com"
 }
+
 
 model User {
   id                String   @id @default(cuid())

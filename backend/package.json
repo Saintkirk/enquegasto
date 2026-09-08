@@ -16,7 +16,11 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
-  "keywords": ["suscripciones", "chile", "finanzas"],
+  "keywords": [
+    "suscripciones",
+    "chile",
+    "finanzas"
+  ],
   "author": "EnQuéGasto Team",
   "license": "MIT",
   "dependencies": {
@@ -33,6 +37,7 @@
     "passport": "^0.7.0",
     "passport-apple": "^2.0.2",
     "passport-google-oauth20": "^2.0.0",
+    "pg": "^8.23.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

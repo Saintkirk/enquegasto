@@ -97,8 +97,8 @@ export async function getPlatform(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // ARREGLADO DEFINITIVAMENTE: Forzamos la lectura del encabezado mediante un casteo explícito a tipo string o undefined
-    const _userId = req.headers['x-user-id'] as string | undefined;
+    // ARREGLADO EXÁCTAMENTE: Unificamos el nombre a 'userId' removiendo el guion bajo y aplicando el cast estricto
+    const userId = req.headers['x-user-id'] as string | undefined;
 
     const platform = await prisma.platform.findUnique({
       where: { slug }

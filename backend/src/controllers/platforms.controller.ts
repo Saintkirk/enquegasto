@@ -97,9 +97,8 @@ export async function getPlatform(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // ARREGLADO: Se castea explícitamente a string o undefined para cumplir estrictamente la regla TS2322
-    const rawUserId = req.headers['x-user-id'];
-    const _userId = typeof rawUserId === 'string' ? rawUserId : undefined;
+    // ARREGLADO DEFINITIVAMENTE: Forzamos la lectura del encabezado mediante un casteo explícito a tipo string o undefined
+    const _userId = req.headers['x-user-id'] as string | undefined;
 
     const platform = await prisma.platform.findUnique({
       where: { slug }

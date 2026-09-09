@@ -1,0 +1,31 @@
+# Blueprint Render — EnQuéGasto Backend
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: enquegasto-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install --include=dev && npx prisma generate && npx tsc
+    startCommand: npx prisma db push --skip-generate && node dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        sync: false

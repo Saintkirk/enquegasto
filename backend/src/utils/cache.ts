@@ -1,3 +1,6 @@
+export const CACHE_TTL = 3600; // O el valor numérico que tengas configurado
+
+
 /**
  * Cache en memoria simple para catálogo de plataformas
  */

@@ -1,5 +1,6 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy, Profile as GoogleProfile } from 'passport-google-oauth20';
+// @ts-ignore
 import AppleStrategy from 'passport-apple';
 import { prisma } from './database';
 import { env } from './env';

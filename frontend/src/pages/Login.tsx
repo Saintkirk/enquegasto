@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-do
 import { useAuth } from '../contexts/AuthContext';
 import { getApiBaseUrl } from '../api/client';
 
-const API = getApiBaseUrl() || import.meta.env.VITE_API_URL || 'http://localhost:3001';
+/** Siempre URL absoluta del backend (OAuth no puede ir por proxy relativo) */
+const API = getApiBaseUrl();
 
 export default function Login() {
   const { login } = useAuth();
@@ -15,12 +16,18 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Errores de OAuth: /auth/error?message=... o state desde callback
   useEffect(() => {
     const fromQuery = params.get('message');
     const fromState = (location.state as { error?: string } | null)?.error;
-    if (fromQuery) setError(decodeURIComponent(fromQuery));
-    else if (fromState) setError(fromState);
+    if (fromQuery) {
+      try {
+        setError(decodeURIComponent(fromQuery));
+      } catch {
+        setError(fromQuery);
+      }
+    } else if (fromState) {
+      setError(fromState);
+    }
   }, [params, location.state]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -31,16 +38,18 @@ export default function Login() {
       await login(email, password);
       navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string; error?: string } } })?.response?.data
-          ?.message ||
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        'No pudimos iniciar sesión. Revisa correo y contraseña.';
-      setError(msg);
+      const data = (err as { response?: { data?: { message?: string; error?: string } } })?.response
+        ?.data;
+      setError(
+        data?.message || data?.error || 'No pudimos iniciar sesión. Revisa correo y contraseña.'
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  const googleUrl = `${API}/api/auth/google`;
+  const appleUrl = `${API}/api/auth/apple`;
 
   return (
     <div className="relative flex min-h-[100dvh] items-center justify-center overflow-x-hidden overflow-y-auto px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
@@ -121,14 +130,14 @@ export default function Login() {
 
             <div className="space-y-2.5">
               <a
-                href={`${API.replace(/\/$/, '')}/api/auth/google`}
+                href={googleUrl}
                 className="flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 active:scale-[0.98]"
               >
                 <GoogleIcon />
                 Continuar con Google
               </a>
               <a
-                href={`${API.replace(/\/$/, '')}/api/auth/apple`}
+                href={appleUrl}
                 className="flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 active:scale-[0.98]"
               >
                 <AppleIcon />

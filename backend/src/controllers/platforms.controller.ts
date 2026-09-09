@@ -98,7 +98,7 @@ export async function getPlatform(req: Request, res: Response): Promise<void> {
     }
 
     const rawUserId = req.headers['x-user-id'];
-    const userId = (Array.isArray(rawUserId) ? rawUserId[0] : rawUserId) as string | undefined;
+    const userId: string | undefined = typeof rawUserId === 'string' ? rawUserId : undefined;
 
     const platform = await prisma.platform.findUnique({
       where: { slug }

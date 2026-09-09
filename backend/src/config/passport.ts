@@ -80,7 +80,7 @@ export function configurePassport(): void {
         {
           clientID: env.GOOGLE_CLIENT_ID,
           clientSecret: env.GOOGLE_CLIENT_SECRET,
-          callbackURL: env.GOOGLE_CALLBACK_URL || 'http://localhost:3001/api/auth/google/callback',
+          callbackURL: env.GOOGLE_CALLBACK_URL || 'https://enquegasto-api.onrender.com/api/auth/google/callback',
           scope: ['profile', 'email'],
         },
         async (_accessToken, _refreshToken, profile: GoogleProfile, done) => {
@@ -111,8 +111,6 @@ export function configurePassport(): void {
               isNewUser,
             };
 
-            // SOLUCIÓN AL ERROR TS2345: Forzamos el casteo a 'any' para indicarle a Passport 
-            // que acepte tu estructura personalizada con tokens sin que rompa el tipado estricto.
             return done(null, result as any);
           } catch (error) {
             return done(error as Error);
@@ -122,7 +120,7 @@ export function configurePassport(): void {
     );
     console.log('✅ Passport Google Strategy configurada');
   } else {
-    console.warn('⚠️  Google OAuth no configurado (faltan GOOGLE_CLIENT_ID / SECRET)');
+    console.warn('⚠️ Google OAuth no configurado (faltan GOOGLE_CLIENT_ID / SECRET)');
   }
 
   if (env.APPLE_CLIENT_ID && env.APPLE_TEAM_ID && env.APPLE_KEY_ID) {
@@ -133,7 +131,7 @@ export function configurePassport(): void {
           teamID: env.APPLE_TEAM_ID,
           keyID: env.APPLE_KEY_ID,
           privateKeyLocation: env.APPLE_PRIVATE_KEY_PATH || undefined,
-          callbackURL: env.APPLE_CALLBACK_URL || 'http://localhost:3001/api/auth/apple/callback',
+          callbackURL: env.APPLE_CALLBACK_URL || 'https://enquegasto-api.onrender.com/api/auth/apple/callback',
           scope: ['name', 'email'],
         },
         async (
@@ -177,7 +175,6 @@ export function configurePassport(): void {
               isNewUser,
             };
 
-            // SOLUCIÓN AL ERROR TS2345: Forzamos el casteo a 'any' aquí también.
             return done(null, result as any);
           } catch (error) {
             return done(error as Error);
@@ -187,7 +184,7 @@ export function configurePassport(): void {
     );
     console.log('✅ Passport Apple Strategy configurada');
   } else {
-    console.warn('⚠️  Apple OAuth no configurado (faltan APPLE_CLIENT_ID / TEAM_ID / KEY_ID)');
+    console.warn('⚠️ Apple OAuth no configurado (faltan APPLE_CLIENT_ID / TEAM_ID / KEY_ID)');
   }
 
   passport.serializeUser((user: any, done) => {

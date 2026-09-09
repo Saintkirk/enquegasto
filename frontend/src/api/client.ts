@@ -3,10 +3,14 @@ import axios from 'axios';
 /**
  * Cliente HTTP EnQuéGasto
  * - Dev (Vite): proxy /api → localhost:3001
- * - Producción / APK: VITE_API_URL (ej. https://enquegasto-api.onrender.com)
+ * - Producción: VITE_API_URL o fallback Render
  */
+const fromEnv = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || '';
+
+const PRODUCTION_API_FALLBACK = 'https://enquegasto-api.onrender.com';
+
 const rawBase =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || '';
+  fromEnv || (import.meta.env.PROD ? PRODUCTION_API_FALLBACK : '');
 
 const baseURL = rawBase ? `${rawBase}/api` : '/api';
 
@@ -46,8 +50,9 @@ api.interceptors.response.use(
   }
 );
 
+/** Base del backend sin /api (para links OAuth) */
 export function getApiBaseUrl(): string {
-  return rawBase || '';
+  return rawBase || (import.meta.env.DEV ? 'http://localhost:3001' : PRODUCTION_API_FALLBACK);
 }
 
 export default api;

@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-/* EnQuéGasto — base + motion-safe polish */
 :root {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
@@ -16,9 +15,19 @@
   font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-body {
+html,
+body,
+#root {
   margin: 0;
+  min-height: 100%;
   min-height: 100dvh;
+}
+
+body {
+  /* Evita saltos de layout en Android WebView */
+  overflow-x: hidden;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
 }
 
 .currency {
@@ -35,8 +44,15 @@ body {
 }
 
 @keyframes eqg-pulse {
-  0%, 100% { opacity: 0; transform: scale(1); }
-  50% { opacity: 0.35; transform: scale(1.08); }
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(1.08);
+  }
 }
 .eqg-pulse {
   animation: eqg-pulse 2.2s var(--eqg-ease) infinite;
@@ -44,9 +60,15 @@ body {
 }
 
 @keyframes eqg-progress {
-  0% { transform: translateX(-100%) scaleX(0.4); }
-  50% { transform: translateX(40%) scaleX(0.65); }
-  100% { transform: translateX(250%) scaleX(0.4); }
+  0% {
+    transform: translateX(-100%) scaleX(0.4);
+  }
+  50% {
+    transform: translateX(40%) scaleX(0.65);
+  }
+  100% {
+    transform: translateX(250%) scaleX(0.4);
+  }
 }
 .eqg-progress {
   width: 100%;
@@ -67,11 +89,16 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root { --eqg-duration: 0.01ms; }
-  .eqg-pulse, .eqg-progress { animation: none; will-change: auto; }
-  .eqg-progress { transform: none; width: 70%; }
-  .eqg-transition, .eqg-transition * {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
+  :root {
+    --eqg-duration: 0.01ms;
+  }
+  .eqg-pulse,
+  .eqg-progress {
+    animation: none;
+    will-change: auto;
+  }
+  .eqg-progress {
+    transform: none;
+    width: 70%;
   }
 }

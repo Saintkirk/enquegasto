@@ -1,16 +1,27 @@
-import { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, FormEvent, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiBaseUrl } from '../api/client';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API = getApiBaseUrl() || import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Errores de OAuth: /auth/error?message=... o state desde callback
+  useEffect(() => {
+    const fromQuery = params.get('message');
+    const fromState = (location.state as { error?: string } | null)?.error;
+    if (fromQuery) setError(decodeURIComponent(fromQuery));
+    else if (fromState) setError(fromState);
+  }, [params, location.state]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -18,11 +29,13 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'No pudimos iniciar sesión. Intenta de nuevo.';
+        (err as { response?: { data?: { message?: string; error?: string } } })?.response?.data
+          ?.message ||
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        'No pudimos iniciar sesión. Revisa correo y contraseña.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -30,41 +43,44 @@ export default function Login() {
   };
 
   return (
-    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden px-4 py-12">
+    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-x-hidden overflow-y-auto px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]">
       <div className="pointer-events-none absolute inset-0 bg-[#faf9f8]" />
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse 70% 50% at 50% -5%, rgba(225,29,72,0.11), transparent 55%), radial-gradient(ellipse 40% 35% at 100% 100%, rgba(225,29,72,0.05), transparent 45%)',
+            'radial-gradient(ellipse 70% 50% at 50% -5%, rgba(225,29,72,0.11), transparent 55%)',
         }}
       />
-      <div className="eqg-grain pointer-events-none absolute inset-0 opacity-[0.03]" />
 
       <div className="relative z-10 w-full max-w-[400px]">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-5 inline-flex rounded-[1.5rem] border border-rose-950/5 bg-rose-950/[0.03] p-1.5 shadow-[0_16px_40px_-18px_rgba(225,29,72,0.4)]">
-            <div className="flex h-14 w-14 items-center justify-center rounded-[calc(1.5rem-0.375rem)] bg-gradient-to-br from-rose-500 to-rose-700 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25)]">
-              <span className="text-2xl font-semibold text-white">$</span>
+        <div className="mb-5 text-center sm:mb-8">
+          <div className="mx-auto mb-3 inline-flex rounded-[1.25rem] border border-rose-950/5 bg-rose-950/[0.03] p-1.5 shadow-[0_12px_32px_-16px_rgba(225,29,72,0.4)] sm:mb-5 sm:rounded-[1.5rem]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[calc(1.25rem-0.375rem)] bg-gradient-to-br from-rose-500 to-rose-700 sm:h-14 sm:w-14">
+              <span className="text-xl font-semibold text-white sm:text-2xl">$</span>
             </div>
           </div>
-          <h1 className="font-display text-3xl font-semibold tracking-[-0.03em] text-slate-900">
+          <h1 className="font-display text-2xl font-semibold tracking-[-0.03em] text-slate-900 sm:text-3xl">
             EnQué<span className="text-rose-600">Gasto</span>
           </h1>
-          <p className="mx-auto mt-2 max-w-[280px] text-sm leading-relaxed text-slate-500">
+          <p className="mx-auto mt-1.5 max-w-[280px] text-xs leading-relaxed text-slate-500 sm:mt-2 sm:text-sm">
             Para que no te preguntes en qué gasté mi plata a fin de mes
           </p>
         </div>
 
-        <div className="rounded-[1.75rem] border border-slate-900/5 bg-slate-900/[0.03] p-1.5 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.18)]">
-          <div className="rounded-[calc(1.75rem-0.375rem)] bg-white/90 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-sm sm:p-7">
-            <p className="mb-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Bienvenido de nuevo</p>
+        <div className="rounded-[1.5rem] border border-slate-900/5 bg-slate-900/[0.03] p-1.5 shadow-[0_20px_50px_-28px_rgba(15,23,42,0.18)] sm:rounded-[1.75rem]">
+          <div className="rounded-[calc(1.5rem-0.375rem)] bg-white/95 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-sm sm:rounded-[calc(1.75rem-0.375rem)] sm:p-7">
+            <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Bienvenido de nuevo
+            </p>
 
             {error && (
-              <div className="mb-4 rounded-xl border border-rose-200/80 bg-rose-50 px-3.5 py-3 text-sm text-rose-700">{error}</div>
+              <div className="mb-4 rounded-xl border border-rose-200/80 bg-rose-50 px-3.5 py-3 text-sm text-rose-700">
+                {error}
+              </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-600">Correo</label>
                 <input
@@ -91,39 +107,36 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="group mt-1 flex w-full items-center justify-center gap-2 rounded-full bg-rose-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_-8px_rgba(225,29,72,0.55)] transition-all hover:bg-rose-500 active:scale-[0.98] disabled:opacity-50"
+                className="mt-1 flex w-full items-center justify-center gap-2 rounded-full bg-rose-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_-8px_rgba(225,29,72,0.55)] transition-all hover:bg-rose-500 active:scale-[0.98] disabled:opacity-50"
               >
                 {loading ? 'Entrando…' : 'Entrar'}
-                {!loading && (
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 group-hover:translate-x-0.5">→</span>
-                )}
               </button>
             </form>
 
-            <div className="my-6 flex items-center gap-3">
+            <div className="my-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-slate-200" />
-              <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400">o continúa con</span>
+              <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400">o</span>
               <div className="h-px flex-1 bg-slate-200" />
             </div>
 
             <div className="space-y-2.5">
               <a
-                href={`${API}/api/auth/google`}
-                className="flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
+                href={`${API.replace(/\/$/, '')}/api/auth/google`}
+                className="flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 active:scale-[0.98]"
               >
                 <GoogleIcon />
                 Continuar con Google
               </a>
               <a
-                href={`${API}/api/auth/apple`}
-                className="flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]"
+                href={`${API.replace(/\/$/, '')}/api/auth/apple`}
+                className="flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 active:scale-[0.98]"
               >
                 <AppleIcon />
                 Continuar con Apple
               </a>
             </div>
 
-            <p className="mt-6 text-center text-sm text-slate-500">
+            <p className="mt-5 text-center text-sm text-slate-500">
               ¿No tienes cuenta?{' '}
               <Link to="/register" className="font-semibold text-rose-600 hover:text-rose-500">
                 Regístrate
@@ -131,10 +144,6 @@ export default function Login() {
             </p>
           </div>
         </div>
-
-        <p className="mt-8 text-center text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
-          Chile · CLP · Datos protegidos
-        </p>
       </div>
     </div>
   );

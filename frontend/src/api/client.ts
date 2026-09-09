@@ -1,16 +1,20 @@
 import axios from 'axios';
 
 /**
- * Cliente HTTP de EnQuéGasto
- * Usa el proxy de Vite en desarrollo (/api → backend)
+ * Cliente HTTP EnQuéGasto
+ * - Dev (Vite): proxy /api → localhost:3001
+ * - Producción / APK: VITE_API_URL (ej. https://enquegasto-api.onrender.com)
  */
+const rawBase =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || '';
+
+const baseURL = rawBase ? `${rawBase}/api` : '/api';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL,
   withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 25000,
 });
 
 api.interceptors.request.use((config) => {
@@ -25,12 +29,11 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config;
-
-    if (error.response?.status === 401 && !original._retry) {
-      original._retry = true;
-
+    if (error.response?.status === 401 && original && !(original as { _retry?: boolean })._retry) {
+      (original as { _retry?: boolean })._retry = true;
       try {
-        const { data } = await axios.post('/api/auth/refresh', {}, { withCredentials: true });
+        const refreshUrl = rawBase ? `${rawBase}/api/auth/refresh` : '/api/auth/refresh';
+        const { data } = await axios.post(refreshUrl, {}, { withCredentials: true });
         localStorage.setItem('accessToken', data.accessToken);
         original.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(original);
@@ -39,9 +42,12 @@ api.interceptors.response.use(
         window.location.href = '/login';
       }
     }
-
     return Promise.reject(error);
   }
 );
+
+export function getApiBaseUrl(): string {
+  return rawBase || '';
+}
 
 export default api;

@@ -97,7 +97,7 @@ export async function getPlatform(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // ARREGLADO: Forzamos la cabecera a actuar estrictamente como string para mapear el ID sin errores
+    // ARREGLADO: Se castea explícitamente a string o undefined para cumplir estrictamente la regla TS2322
     const rawUserId = req.headers['x-user-id'];
     const _userId = typeof rawUserId === 'string' ? rawUserId : undefined;
 

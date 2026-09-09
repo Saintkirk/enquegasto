@@ -1,12 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, getUserById } from '../services/auth.service';
 
-// SOLUCIÓN AL ERROR TS2717: Cambiamos el tipo estricto de 'user' a 'any' 
-// para evitar que colisione con el tipo nativo que inyecta la librería Passport.
+// EXTENSIÓN DE INTERFACES GLOBAL: Integración limpia con los tipos nativos de Express y Passport
 declare global {
   namespace Express {
+    interface User {
+      id: string;
+      email: string;
+      name?: string;
+    }
     interface Request {
-      user?: any;
       userId?: string;
     }
   }

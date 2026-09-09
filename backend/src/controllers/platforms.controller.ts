@@ -70,7 +70,6 @@ export async function listPlatforms(req: Request, res: Response): Promise<void> 
       platforms: platforms.map(mapPlatform),
     };
 
-    // SOLUCIÓN: Cambiamos CACHE_TTL.platforms a CACHE_TTL * 1000 ya que CACHE_TTL es un número único en segundos
     cacheSet(cacheKey, data, CACHE_TTL * 1000);
 
     res.setHeader('X-Cache', 'MISS');
@@ -98,10 +97,8 @@ export async function getPlatform(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // SOLUCIÓN AL CÓDIGO HUÉRFANO: Aseguramos la captura del header opcional con tipado estricto
-    const _userId = req.headers['x-user-id'] as string | undefined;
+    const _userId = (req.headers['x-user-id'] as string) || undefined;
 
-    // Buscamos físicamente el registro en la base de datos para mapearlo correctamente
     const platform = await prisma.platform.findUnique({
       where: { slug }
     });
@@ -115,8 +112,6 @@ export async function getPlatform(req: Request, res: Response): Promise<void> {
     }
 
     const data = { platform: mapPlatform(platform) };
-    
-    // SOLUCIÓN: Cambiamos CACHE_TTL.platforms a CACHE_TTL * 1000
     cacheSet(cacheKey, data, CACHE_TTL * 1000);
 
     res.setHeader('X-Cache', 'MISS');
@@ -157,7 +152,6 @@ export async function listCategories(_req: Request, res: Response): Promise<void
       })),
     };
 
-    // SOLUCIÓN: Cambiamos CACHE_TTL.categories a CACHE_TTL * 1000
     cacheSet(cacheKey, data, CACHE_TTL * 1000);
 
     res.setHeader('X-Cache', 'MISS');

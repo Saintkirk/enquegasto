@@ -38,7 +38,7 @@ export async function toggleZombie(req: Request, res: Response): Promise<void> {
   try {
     if (!req.userId) { res.status(401).json({ error: 'No autorizado' }); return; }
     const { isZombie } = req.body as { isZombie: boolean };
-    const sub = await setZombieStatus(req.userId, req.params.id, Boolean(isZombie));
+    const sub = await setZombieStatus(req.userId, req.params.id as string, Boolean(isZombie));
     res.json({ subscription: sub });
   } catch (error) {
     res.status(404).json({ error: error instanceof Error ? error.message : 'Error' });
@@ -48,7 +48,7 @@ export async function toggleZombie(req: Request, res: Response): Promise<void> {
 export async function logUsage(req: Request, res: Response): Promise<void> {
   try {
     if (!req.userId) { res.status(401).json({ error: 'No autorizado' }); return; }
-    const sub = await registerUsage(req.userId, req.params.id);
+    const sub = await registerUsage(req.userId, req.params.id as string);
     res.json({ message: 'Uso registrado', subscription: sub });
   } catch (error) {
     res.status(404).json({ error: error instanceof Error ? error.message : 'Error' });

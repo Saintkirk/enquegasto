@@ -33,7 +33,7 @@ export async function list(req: Request, res: Response): Promise<void> {
 export async function getOne(req: Request, res: Response): Promise<void> {
   try {
     if (!req.userId) { res.status(401).json({ error: 'No autorizado' }); return; }
-    const sub = await getSubscription(req.userId, req.params.id);
+    const sub = await getSubscription(req.userId, req.params.id as string);
     if (!sub) { res.status(404).json({ error: 'No encontrada' }); return; }
     res.json({ subscription: sub });
   } catch {
@@ -44,7 +44,7 @@ export async function getOne(req: Request, res: Response): Promise<void> {
 export async function update(req: Request, res: Response): Promise<void> {
   try {
     if (!req.userId) { res.status(401).json({ error: 'No autorizado' }); return; }
-    const sub = await updateSubscription(req.userId, req.params.id, req.body);
+    const sub = await updateSubscription(req.userId, req.params.id as string, req.body);
     res.json({ message: 'Actualizada', subscription: sub });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';
@@ -55,7 +55,7 @@ export async function update(req: Request, res: Response): Promise<void> {
 export async function remove(req: Request, res: Response): Promise<void> {
   try {
     if (!req.userId) { res.status(401).json({ error: 'No autorizado' }); return; }
-    await deleteSubscription(req.userId, req.params.id);
+    await deleteSubscription(req.userId, req.params.id as string);
     res.json({ message: 'Suscripción desactivada' });
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Error';

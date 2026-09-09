@@ -97,9 +97,8 @@ export async function getPlatform(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // Solución al error TS2322 manejando de forma segura string | string[] | undefined
     const rawUserId = req.headers['x-user-id'];
-    const userId = Array.isArray(rawUserId) ? rawUserId[0] : (rawUserId || '');
+    const userId: string | undefined = Array.isArray(rawUserId) ? rawUserId[0] : rawUserId;
 
     const platform = await prisma.platform.findUnique({
       where: { slug }

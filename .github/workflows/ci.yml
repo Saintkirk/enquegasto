@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "22"
 
 jobs:
   changes:
@@ -20,7 +20,6 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
-      android: ${{ steps.filter.outputs.android }}
       workflows: ${{ steps.filter.outputs.workflows }}
     steps:
       - uses: actions/checkout@v4
@@ -34,18 +33,13 @@ jobs:
               - 'backend/**'
             frontend:
               - 'frontend/**'
-              - '!frontend/android/**'
-            android:
-              - 'frontend/android/**'
-              - 'frontend/capacitor.config.ts'
-              - 'frontend/package.json'
             workflows:
               - '.github/workflows/**'
 
   backend:
     name: Backend
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflows == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     defaults:
@@ -64,16 +58,6 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - name: Install dependencies
         run: npm install --no-audit --no-fund --legacy-peer-deps
-      - name: Cache Prisma engines
-        uses: actions/cache@v4
-        with:
-          path: |
-            backend/node_modules/.prisma
-            backend/node_modules/@prisma/engines
-            ~/.cache/prisma
-          key: prisma-${{ runner.os }}-${{ hashFiles('backend/package-lock.json', 'backend/prisma/schema.prisma') }}
-          restore-keys: |
-            prisma-${{ runner.os }}-
       - name: Prisma generate
         run: npx prisma generate
         env:
@@ -84,7 +68,7 @@ jobs:
   frontend:
     name: Frontend
     needs: changes
-    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.android == 'true' || needs.changes.outputs.workflows == 'true' || github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflows == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -102,90 +86,9 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
-        # package-lock puede desincronizarse; no usar npm ci estricto
         run: npm install --no-audit --no-fund --legacy-peer-deps
-      - name: Cache Vite
-        uses: actions/cache@v4
-        with:
-          path: |
-            frontend/node_modules/.vite
-            frontend/node_modules/.cache
-          key: vite-${{ runner.os }}-${{ hashFiles('frontend/package.json', 'frontend/vite.config.ts') }}
-          restore-keys: |
-            vite-${{ runner.os }}-
       - name: Build
         run: npx vite build
         env:
           NODE_ENV: production
           VITE_API_URL: https://enquegasto-api.onrender.com
-      - name: Upload dist
-        if: needs.changes.outputs.android == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist
-          retention-days: 3
-          compression-level: 9
-
-  android:
-    name: Android (Gradle)
-    needs: [changes, frontend]
-    if: |
-      always() &&
-      needs.frontend.result == 'success' &&
-      (needs.changes.outputs.android == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          sparse-checkout: |
-            frontend
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-          cache: gradle
-      - uses: android-actions/setup-android@v3
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            frontend/android/.gradle
-          key: gradle-${{ runner.os }}-${{ hashFiles('frontend/android/**/*.gradle*', 'frontend/android/gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
-      - uses: actions/download-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist
-      - name: Install deps
-        working-directory: frontend
-        run: npm install --no-audit --no-fund --legacy-peer-deps --ignore-scripts
-      - run: npx cap sync android --no-deps 2>/dev/null || true
-        working-directory: frontend
-        continue-on-error: true
-      - name: Assemble debug APK
-        working-directory: frontend/android
-        run: |
-          if [ ! -f gradlew ]; then echo "Sin gradlew — omitiendo APK"; exit 0; fi
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --parallel --build-cache --stacktrace || echo "Gradle falló (no bloquea CI principal)"
-        env:
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2g -XX:+UseParallelGC"
-        continue-on-error: true
-      - uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: enquegasto-debug-apk
-          path: frontend/android/app/build/outputs/apk/debug/*.apk
-          retention-days: 7
-          compression-level: 9
-          if-no-files-found: ignore

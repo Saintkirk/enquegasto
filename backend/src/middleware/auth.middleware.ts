@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, getUserById } from '../services/auth.service';
 
-// EXTENSIÓN DE INTERFACES GLOBAL: Integración limpia con los tipos nativos de Express y Passport
+// EXTENSIÓN DE INTERFACES GLOBAL: Mantenemos compatibilidad absoluta de nulabilidad con la DB
 declare global {
   namespace Express {
     interface User {
       id: string;
       email: string;
-      name?: string;
+      name?: string | null; // Cambiado para aceptar null sin conflictos de tipo
     }
     interface Request {
       userId?: string;

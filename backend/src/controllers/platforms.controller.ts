@@ -97,7 +97,9 @@ export async function getPlatform(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const _userId = (req.headers['x-user-id'] as string) || undefined;
+    // ARREGLADO: Forzamos la cabecera a actuar estrictamente como string para mapear el ID sin errores
+    const rawUserId = req.headers['x-user-id'];
+    const _userId = typeof rawUserId === 'string' ? rawUserId : undefined;
 
     const platform = await prisma.platform.findUnique({
       where: { slug }

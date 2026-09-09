@@ -111,7 +111,9 @@ export function configurePassport(): void {
               isNewUser,
             };
 
-            return done(null, result);
+            // SOLUCIÓN AL ERROR TS2345: Forzamos el casteo a 'any' para indicarle a Passport 
+            // que acepte tu estructura personalizada con tokens sin que rompa el tipado estricto.
+            return done(null, result as any);
           } catch (error) {
             return done(error as Error);
           }
@@ -175,7 +177,8 @@ export function configurePassport(): void {
               isNewUser,
             };
 
-            return done(null, result);
+            // SOLUCIÓN AL ERROR TS2345: Forzamos el casteo a 'any' aquí también.
+            return done(null, result as any);
           } catch (error) {
             return done(error as Error);
           }

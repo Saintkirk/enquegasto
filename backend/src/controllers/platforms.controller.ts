@@ -97,8 +97,9 @@ export async function getPlatform(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // ARREGLADO DEFINITIVAMENTE: Extraemos la cabecera forzando la conversión absoluta a string plano
-    const userId = String(req.headers['x-user-id'] || '');
+    // Solución al error TS2322 manejando de forma segura string | string[] | undefined
+    const rawUserId = req.headers['x-user-id'];
+    const userId = Array.isArray(rawUserId) ? rawUserId[0] : (rawUserId || '');
 
     const platform = await prisma.platform.findUnique({
       where: { slug }

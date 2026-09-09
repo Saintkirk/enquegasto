@@ -32,6 +32,12 @@ function mapPlatform(p: {
   };
 }
 
+/** Express 5 tipa params como string | string[] */
+function paramString(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? '';
+  return value ?? '';
+}
+
 export async function listPlatforms(req: Request, res: Response): Promise<void> {
   try {
     const category = typeof req.query.category === 'string' ? req.query.category : undefined;
@@ -86,7 +92,12 @@ export async function listPlatforms(req: Request, res: Response): Promise<void> 
 
 export async function getPlatform(req: Request, res: Response): Promise<void> {
   try {
-    const { slug } = req.params;
+    const slug = paramString(req.params.slug);
+    if (!slug) {
+      res.status(400).json({ error: 'Slug requerido' });
+      return;
+    }
+
     const cacheKey = `platform:${slug}`;
     const cached = cacheGet<{ platform: ReturnType<typeof mapPlatform> }>(cacheKey);
 
@@ -97,11 +108,8 @@ export async function getPlatform(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const rawUserId = req.headers['x-user-id'];
-    const userId: string | undefined = typeof rawUserId === 'string' ? rawUserId : undefined;
-
     const platform = await prisma.platform.findUnique({
-      where: { slug }
+      where: { slug },
     });
 
     if (!platform || !platform.isActive) {

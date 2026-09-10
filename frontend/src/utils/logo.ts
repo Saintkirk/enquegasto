@@ -1,22 +1,36 @@
 /**
  * Logos de plataformas con AVIF / WebP (wsrv.nl) y fallback PNG/favicon.
  *
- * Flujo:
- * 1. Favicon Google del dominio (fuente estable)
- * 2. Proxy wsrv.nl → AVIF y WebP al tamaño exacto
- * 3. <picture> elige el mejor formato que soporte el navegador
+ * Compresión orientada a iconos 16–128px (no fotos):
+ * - AVIF q≈45–55 → ~40–60% menos que WebP a calidad visual similar
+ * - WebP q≈70
+ * - fit=contain + fondo transparente donde aplique
  */
 
 export type FaviconSize = 16 | 32 | 64 | 128;
 
 export type LogoSources = {
-  /** Origen sin transformar (favicon) */
   original: string;
   avif: string;
   webp: string;
 };
 
 const cache = new Map<string, LogoSources | null>();
+
+/** Calidad según formato y tamaño de display */
+function qualityFor(output: 'avif' | 'webp' | 'png', size: number): number {
+  if (output === 'png') return 80;
+  // Logos pequeños toleran más compresión sin pérdida visible
+  if (output === 'avif') {
+    if (size <= 32) return 40;
+    if (size <= 64) return 48;
+    return 55;
+  }
+  // webp
+  if (size <= 32) return 65;
+  if (size <= 64) return 72;
+  return 78;
+}
 
 function hostFromWebsite(websiteUrl: string): string | null {
   try {
@@ -26,7 +40,6 @@ function hostFromWebsite(websiteUrl: string): string | null {
   }
 }
 
-/** Favicon Google del dominio (fuente) */
 export function logoFromWebsite(
   websiteUrl?: string | null,
   size: FaviconSize = 64
@@ -38,32 +51,43 @@ export function logoFromWebsite(
 }
 
 /**
- * Reescribe cualquier URL de imagen a través de wsrv.nl en un formato dado.
- * w = tamaño de salida; output = avif | webp | png
+ * wsrv.nl params de compresión:
+ * - q: calidad 1–100
+ * - n: 1 = sin upscale innecesario / max compression effort en algunos builds
+ * - output: avif | webp | png
+ * - il: interlaced (webp) — omitimos en avif
+ * - a: 1 fuerza alpha cuando existe
  */
 function viaWsrv(
   sourceUrl: string,
   size: number,
   output: 'avif' | 'webp' | 'png'
 ): string {
+  const q = qualityFor(output, size);
   const params = new URLSearchParams({
     url: sourceUrl.replace(/^https?:\/\//, ''),
     w: String(size),
     h: String(size),
     fit: 'contain',
     output,
-    // we: true en wsrv usa default si falla; sin default mostramos error y caemos a emoji
+    q: String(q),
+    // Esfuerzo de compresión (wsrv usa `l` level en algunos backends; `n`=max effort)
+    n: '-1',
   });
+
+  // WebP: progressive/interlace ligero ayuda en listas largas
+  if (output === 'webp') {
+    params.set('il', '');
+  }
+
   return `https://wsrv.nl/?${params.toString()}`;
 }
 
-/** Resuelve URL base del logo (logoUrl propio o favicon del sitio) */
 function resolveBaseUrl(
   platform: { logoUrl?: string | null; websiteUrl?: string | null },
   size: FaviconSize
 ): string | null {
   if (platform.logoUrl) {
-    // Si ya es favicon Google a otro sz, regeneramos al tamaño pedido
     if (platform.logoUrl.includes('google.com/s2/favicons') && platform.websiteUrl) {
       return logoFromWebsite(platform.websiteUrl, size);
     }
@@ -72,15 +96,11 @@ function resolveBaseUrl(
   return logoFromWebsite(platform.websiteUrl, size);
 }
 
-/**
- * Fuentes optimizadas para <picture>:
- * AVIF → WebP → original (PNG/ICO)
- */
 export function platformLogoSources(
   platform: { logoUrl?: string | null; websiteUrl?: string | null },
   size: FaviconSize = 64
 ): LogoSources | null {
-  const key = `${platform.logoUrl || ''}|${platform.websiteUrl || ''}|${size}`;
+  const key = `${platform.logoUrl || ''}|${platform.websiteUrl || ''}|${size}|v2`;
   if (cache.has(key)) return cache.get(key)!;
 
   const original = resolveBaseUrl(platform, size);
@@ -89,13 +109,10 @@ export function platformLogoSources(
     return null;
   }
 
-  // Pedimos un poco más grande a Google y dejamos que wsrv reescale (mejor nitidez)
-  const sourceForProxy =
-    platform.websiteUrl && !platform.logoUrl?.startsWith('http')
-      ? logoFromWebsite(platform.websiteUrl, 128) || original
-      : original.includes('google.com/s2/favicons')
-        ? logoFromWebsite(platform.websiteUrl, 128) || original
-        : original;
+  // Fuente a 128px → wsrv escala + comprime (mejor nitidez en retina)
+  const sourceForProxy = original.includes('google.com/s2/favicons')
+    ? logoFromWebsite(platform.websiteUrl, 128) || original
+    : original;
 
   const sources: LogoSources = {
     original,
@@ -107,7 +124,6 @@ export function platformLogoSources(
   return sources;
 }
 
-/** Compat: una sola URL (webp preferido para callers antiguos) */
 export function platformLogo(
   platform: { logoUrl?: string | null; websiteUrl?: string | null },
   size: FaviconSize = 64

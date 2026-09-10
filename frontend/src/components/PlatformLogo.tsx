@@ -1,5 +1,5 @@
 import { useState, useMemo, memo } from 'react';
-import { platformLogoSources, faviconSizeFor } from '../utils/logo';
+import { platformLogo, faviconSizeFor } from '../utils/logo';
 
 interface Props {
   platform?: {
@@ -8,19 +8,12 @@ interface Props {
     logoUrl?: string | null;
     websiteUrl?: string | null;
   } | null;
-  /** Lado en px del contenedor visual */
   size?: number;
-  /** Emoji de respaldo */
   fallback?: string;
   className?: string;
-  /** Prioridad alta solo above-the-fold */
   priority?: boolean;
 }
 
-/**
- * Logo con <picture>:
- * AVIF → WebP → PNG/favicon → emoji
- */
 function PlatformLogoInner({
   platform,
   size = 36,
@@ -28,18 +21,17 @@ function PlatformLogoInner({
   className = '',
   priority = false,
 }: Props) {
-  const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
+  const [failed, setFailed] = useState(false);
   const favSize = faviconSizeFor(size);
-
-  const sources = useMemo(
-    () => (platform ? platformLogoSources(platform, favSize) : null),
+  const src = useMemo(() => {
+    setFailed(false);
+    return platform ? platformLogo(platform, favSize) : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [platform?.logoUrl, platform?.websiteUrl, favSize]
-  );
+  }, [platform?.logoUrl, platform?.websiteUrl, favSize]);
 
   const box = { width: size, height: size } as const;
 
-  if (!sources || status === 'error') {
+  if (!src || failed) {
     return (
       <div
         style={box}
@@ -56,31 +48,19 @@ function PlatformLogoInner({
   return (
     <div
       style={box}
-      className={`relative shrink-0 overflow-hidden rounded-xl bg-slate-50 ${className}`}
+      className={`relative shrink-0 overflow-hidden rounded-xl bg-white ${className}`}
     >
-      {status === 'loading' && (
-        <div className="absolute inset-0 animate-pulse bg-slate-100" aria-hidden />
-      )}
-      <picture>
-        <source type="image/avif" srcSet={sources.avif} />
-        <source type="image/webp" srcSet={sources.webp} />
-        <img
-          src={sources.original}
-          alt=""
-          width={size}
-          height={size}
-          loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
-          // @ts-expect-error fetchPriority tipado en React 19+
-          fetchPriority={priority ? 'high' : 'low'}
-          referrerPolicy="no-referrer"
-          className={`h-full w-full object-contain transition-opacity duration-200 ${
-            status === 'ok' ? 'opacity-100' : 'opacity-0'
-          }`}
-          onLoad={() => setStatus('ok')}
-          onError={() => setStatus('error')}
-        />
-      </picture>
+      <img
+        src={src}
+        alt=""
+        width={size}
+        height={size}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding="async"
+        referrerPolicy="no-referrer"
+        className="h-full w-full object-contain"
+        onError={() => setFailed(true)}
+      />
     </div>
   );
 }

@@ -1,16 +1,13 @@
 import { PrismaClient } from '@prisma/client';
-import { PLATFORMS } from './seed-data';
+import { PLATFORMS } from '../src/data/platforms.seed';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log(`🌱 Seeding ${PLATFORMS.length} plataformas…`);
 
-  let created = 0;
-  let updated = 0;
-
   for (const p of PLATFORMS) {
-    const row = await prisma.platform.upsert({
+    await prisma.platform.upsert({
       where: { slug: p.slug },
       create: {
         name: p.name,
@@ -36,13 +33,10 @@ async function main() {
         isActive: true,
       },
     });
-    // Heurística simple: si createdAt ≈ updatedAt recién creado
-    if (row.createdAt.getTime() === row.updatedAt.getTime()) created += 1;
-    else updated += 1;
   }
 
   const total = await prisma.platform.count({ where: { isActive: true } });
-  console.log(`✅ Seed listo. activas=${total} (upsert create≈${created}, update≈${updated})`);
+  console.log(`✅ Seed listo. activas=${total}`);
 }
 
 main()
@@ -53,3 +47,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+}

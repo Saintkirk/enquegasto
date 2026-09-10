@@ -1,5 +1,5 @@
 import { prisma } from '../config/database';
-import { PLATFORMS } from '../../prisma/seed-data';
+import { PLATFORMS } from '../data/platforms.seed';
 
 /** Si no hay plataformas, carga el catálogo (idempotente con upsert). */
 export async function ensurePlatformsSeeded(): Promise<{ seeded: boolean; total: number }> {
@@ -10,7 +10,6 @@ export async function ensurePlatformsSeeded(): Promise<{ seeded: boolean; total:
 
   console.log(`🌱 Catálogo vacío — sembrando ${PLATFORMS.length} plataformas…`);
 
-  // createMany omitDuplicates si el motor lo soporta; usamos upsert por seguridad
   for (const p of PLATFORMS) {
     await prisma.platform.upsert({
       where: { slug: p.slug },

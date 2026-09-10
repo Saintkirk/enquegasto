@@ -1,0 +1,139 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'VITE_API_URL (backend sin /api al final)'
+        required: false
+        default: 'https://enquegasto-api.onrender.com'
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  JAVA_VERSION: '21'
+  GRADLE_VERSION: '8.11.1'
+  VITE_API_URL: ${{ github.event.inputs.api_url || 'https://enquegasto-api.onrender.com' }}
+
+jobs:
+  build-apk:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept licenses + platform 35
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools" || true
+          java -version
+
+      - name: Install Gradle
+        run: |
+          curl -fsSL "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -o /tmp/gradle.zip
+          sudo unzip -qo /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-${GRADLE_VERSION}/bin" >> "$GITHUB_PATH"
+          /opt/gradle-${GRADLE_VERSION}/bin/gradle --version
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm install --no-audit --no-fund --legacy-peer-deps
+
+      - name: Build web (Vite)
+        working-directory: frontend
+        run: npx vite build
+        env:
+          NODE_ENV: production
+          VITE_API_URL: ${{ env.VITE_API_URL }}
+
+      - name: Capacitor Android (fresh)
+        working-directory: frontend
+        run: |
+          # Capacitor CLI si no está en package.json
+          npx --yes @capacitor/cli@7 add android || true
+          # Asegurar paquetes capacitor
+          npm install @capacitor/core@7 @capacitor/android@7 @capacitor/cli@7 --no-audit --no-fund --legacy-peer-deps || true
+          rm -rf android
+          npx cap add android
+          npx cap sync android
+
+      - name: local.properties + cleartext
+        working-directory: frontend/android
+        run: |
+          SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "sdk.dir=$SDK_DIR" > local.properties
+          cat local.properties
+
+          MANIFEST="app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ] && ! grep -q 'usesCleartextTraffic' "$MANIFEST"; then
+            sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST" || true
+          fi
+
+          mkdir -p app/src/main/res/xml
+          cat > app/src/main/res/xml/network_security_config.xml << 'XML'
+          <?xml version="1.0" encoding="utf-8"?>
+          <network-security-config>
+            <base-config cleartextTrafficPermitted="true">
+              <trust-anchors>
+                <certificates src="system" />
+              </trust-anchors>
+            </base-config>
+          </network-security-config>
+          XML
+
+      - name: Assemble debug APK
+        working-directory: frontend/android
+        run: |
+          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/gradle-build.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            echo "===== ERRORS ====="
+            grep -E 'What went wrong|error:|FAILURE:|Execution failed' /tmp/gradle-build.log | head -40 || true
+            exit "$status"
+          fi
+          ls -la app/build/outputs/apk/debug/ || true
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx3g -XX:+UseParallelGC'
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: enquegasto-debug-apk
+          path: frontend/android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: /tmp/gradle-build.log
+          if-no-files-found: ignore
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### EnQuéGasto APK" >> "$GITHUB_STEP_SUMMARY"
+          echo "- API: \`${{ env.VITE_API_URL }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Artifact: **enquegasto-debug-apk**" >> "$GITHUB_STEP_SUMMARY"
+          ls -la frontend/android/app/build/outputs/apk/debug/ 2>/dev/null || echo "(sin APK)"

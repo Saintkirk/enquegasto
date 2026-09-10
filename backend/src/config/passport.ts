@@ -3,7 +3,7 @@ import { Strategy as GoogleStrategy, Profile as GoogleProfile } from 'passport-g
 // @ts-ignore
 import AppleStrategy from 'passport-apple';
 import { prisma } from './database';
-import { env } from './env';
+import { env, isGoogleConfigured } from './env';
 import { generateTokens, toPublicUser } from '../services/auth.service';
 import type { UserPublic } from '../types/user';
 
@@ -74,13 +74,13 @@ async function findOrCreateSocialUser(params: {
 }
 
 export function configurePassport(): void {
-  if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
+  if (isGoogleConfigured()) {
     passport.use(
       new GoogleStrategy(
         {
           clientID: env.GOOGLE_CLIENT_ID,
           clientSecret: env.GOOGLE_CLIENT_SECRET,
-          callbackURL: env.GOOGLE_CALLBACK_URL || 'https://enquegasto-api.onrender.com/api/auth/google/callback',
+          callbackURL: env.GOOGLE_CALLBACK_URL,
           scope: ['profile', 'email'],
         },
         async (_accessToken, _refreshToken, profile: GoogleProfile, done) => {
@@ -113,14 +113,17 @@ export function configurePassport(): void {
 
             return done(null, result as any);
           } catch (error) {
+            console.error('Google strategy error:', error);
             return done(error as Error);
           }
         }
       )
     );
-    console.log('✅ Passport Google Strategy configurada');
+    console.log('✅ Passport Google configurado');
+    console.log('   callbackURL:', env.GOOGLE_CALLBACK_URL);
+    console.log('   FRONTEND_URL:', env.FRONTEND_URL);
   } else {
-    console.warn('⚠️ Google OAuth no configurado (faltan GOOGLE_CLIENT_ID / SECRET)');
+    console.warn('⚠️  Google OAuth no configurado (GOOGLE_CLIENT_ID / SECRET vacíos o MOCK)');
   }
 
   if (env.APPLE_CLIENT_ID && env.APPLE_TEAM_ID && env.APPLE_KEY_ID) {
@@ -131,7 +134,9 @@ export function configurePassport(): void {
           teamID: env.APPLE_TEAM_ID,
           keyID: env.APPLE_KEY_ID,
           privateKeyLocation: env.APPLE_PRIVATE_KEY_PATH || undefined,
-          callbackURL: env.APPLE_CALLBACK_URL || 'https://enquegasto-api.onrender.com/api/auth/apple/callback',
+          callbackURL:
+            env.APPLE_CALLBACK_URL ||
+            'https://enquegasto-api.onrender.com/api/auth/apple/callback',
           scope: ['name', 'email'],
         },
         async (
@@ -145,7 +150,9 @@ export function configurePassport(): void {
             const email = profile.email || profile._json?.email;
             if (!email) {
               return done(
-                new Error('Apple no entregó un correo electrónico. Intenta de nuevo o usa otro método.')
+                new Error(
+                  'Apple no entregó un correo electrónico. Intenta de nuevo o usa otro método.'
+                )
               );
             }
 
@@ -169,29 +176,22 @@ export function configurePassport(): void {
               data: { refreshToken: tokens.refreshToken },
             });
 
-            const result: SocialAuthResult = {
+            return done(null, {
               user: toPublicUser(user),
               tokens,
               isNewUser,
-            };
-
-            return done(null, result as any);
+            } as any);
           } catch (error) {
             return done(error as Error);
           }
         }
       )
     );
-    console.log('✅ Passport Apple Strategy configurada');
+    console.log('✅ Passport Apple configurado');
   } else {
-    console.warn('⚠️ Apple OAuth no configurado (faltan APPLE_CLIENT_ID / TEAM_ID / KEY_ID)');
+    console.warn('⚠️  Apple OAuth no configurado');
   }
 
-  passport.serializeUser((user: any, done) => {
-    done(null, user);
-  });
-
-  passport.deserializeUser((user: any, done) => {
-    done(null, user);
-  });
+  passport.serializeUser((user: any, done) => done(null, user));
+  passport.deserializeUser((user: any, done) => done(null, user));
 }

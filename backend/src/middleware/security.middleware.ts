@@ -7,17 +7,56 @@ import { env } from '../config/env';
 export const helmetMiddleware = helmet({
   contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
   crossOriginEmbedderPolicy: false,
+  // Evita romper redirecciones OAuth
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
 });
 
+function buildAllowedOrigins(): string[] {
+  const list = new Set<string>([
+    env.FRONTEND_URL,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000',
+  ]);
+  if (env.CORS_ORIGINS) {
+    env.CORS_ORIGINS.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((o) => list.add(o));
+  }
+  return [...list].filter(Boolean);
+}
+
 export const corsMiddleware = cors({
   origin: (origin, callback) => {
-    const allowed = [env.FRONTEND_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'];
-    if (!origin || allowed.includes(origin)) {
+    // Requests sin Origin (mobile apps, curl, same-origin)
+    if (!origin) {
       callback(null, true);
-    } else {
-      callback(new Error('No permitido por CORS'));
+      return;
     }
+
+    const allowed = buildAllowedOrigins();
+
+    if (allowed.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    // Previews de Vercel: https://xxx.vercel.app
+    try {
+      const host = new URL(origin).hostname;
+      if (host.endsWith('.vercel.app') || host === 'vercel.app') {
+        callback(null, true);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
+    console.warn('CORS bloqueado para origin:', origin, '| permitidos:', allowed);
+    callback(new Error('No permitido por CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -38,7 +77,7 @@ export const globalLimiter = rateLimit({
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -60,7 +99,7 @@ export function sanitizeInput(req: Request, _res: Response, next: NextFunction):
   if (req.body && typeof req.body === 'object') {
     for (const key of Object.keys(req.body)) {
       if (typeof req.body[key] === 'string') {
-        req.body[key] = req.body[key].replace(/</g, '<').replace(/>/g, '>').trim();
+        req.body[key] = req.body[key].replace(/[<>]/g, '').trim();
       }
     }
   }
@@ -80,10 +119,6 @@ export function blockBadMethods(req: Request, res: Response, next: NextFunction)
 }
 
 export function securityHeaders(_req: Request, res: Response, next: NextFunction): void {
-  res.removeHeader('X-Powered-By');
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   next();
 }

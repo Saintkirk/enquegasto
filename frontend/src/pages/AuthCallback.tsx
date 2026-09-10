@@ -11,38 +11,61 @@ export default function AuthCallback() {
   const [status, setStatus] = useState('Completando inicio de sesión…');
 
   useEffect(() => {
-    const accessToken = params.get('accessToken');
-    const error = params.get('message');
+    let cancelled = false;
 
-    if (error && !accessToken) {
-      navigate(`/login?message=${encodeURIComponent(error)}`, { replace: true });
-      return;
-    }
+    const run = async () => {
+      const accessToken = params.get('accessToken');
+      const error = params.get('message');
 
-    if (!accessToken) {
-      navigate('/login?message=' + encodeURIComponent('No recibimos el token de Google/Apple'), {
-        replace: true,
-      });
-      return;
-    }
+      if (error && !accessToken) {
+        navigate(`/login?message=${encodeURIComponent(error)}`, { replace: true });
+        return;
+      }
 
-    localStorage.setItem('accessToken', accessToken);
-    setStatus('Cargando tu perfil…');
-
-    api
-      .get('/auth/me')
-      .then((res) => {
-        setUser(res.data.user);
-        navigate('/dashboard', { replace: true });
-      })
-      .catch(() => {
-        localStorage.removeItem('accessToken');
+      if (!accessToken) {
         navigate(
-          '/login?message=' +
-            encodeURIComponent('Sesión iniciada, pero no pudimos cargar tu perfil. Intenta de nuevo.'),
+          '/login?message=' + encodeURIComponent('No recibimos el token de Google/Apple'),
           { replace: true }
         );
-      });
+        return;
+      }
+
+      localStorage.setItem('accessToken', accessToken);
+      setStatus('Cargando tu perfil…');
+
+      try {
+        const res = await api.get('/auth/me');
+        if (cancelled) return;
+        setUser(res.data.user);
+        navigate('/dashboard', { replace: true });
+      } catch (err) {
+        console.error('AuthCallback /auth/me failed', err);
+        if (cancelled) return;
+        // Token puede ser válido aunque me falle por red: reintento una vez
+        try {
+          await new Promise((r) => setTimeout(r, 800));
+          const res2 = await api.get('/auth/me');
+          if (cancelled) return;
+          setUser(res2.data.user);
+          navigate('/dashboard', { replace: true });
+          return;
+        } catch {
+          localStorage.removeItem('accessToken');
+          navigate(
+            '/login?message=' +
+              encodeURIComponent(
+                'Sesión iniciada, pero no pudimos cargar tu perfil. Revisa VITE_API_URL / API.'
+              ),
+            { replace: true }
+          );
+        }
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
   }, [params, navigate, setUser]);
 
   return <LoadingScreen message={status} />;

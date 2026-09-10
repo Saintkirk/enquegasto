@@ -1,5 +1,5 @@
 import { useState, useMemo, memo } from 'react';
-import { platformLogo, faviconSizeFor } from '../utils/logo';
+import { platformLogoSources, faviconSizeFor } from '../utils/logo';
 
 interface Props {
   platform?: {
@@ -13,16 +13,13 @@ interface Props {
   /** Emoji de respaldo */
   fallback?: string;
   className?: string;
-  /** Prioridad alta solo para el item seleccionado / above-the-fold */
+  /** Prioridad alta solo above-the-fold */
   priority?: boolean;
 }
 
 /**
- * Logo de plataforma optimizado:
- * - pide favicon al tamaño justo
- * - lazy + async decode por defecto
- * - skeleton mientras carga
- * - fallback emoji si falla la red
+ * Logo con <picture>:
+ * AVIF → WebP → PNG/favicon → emoji
  */
 function PlatformLogoInner({
   platform,
@@ -33,21 +30,20 @@ function PlatformLogoInner({
 }: Props) {
   const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
   const favSize = faviconSizeFor(size);
-  const src = useMemo(
-    () => (platform ? platformLogo(platform, favSize) : null),
+
+  const sources = useMemo(
+    () => (platform ? platformLogoSources(platform, favSize) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [platform?.logoUrl, platform?.websiteUrl, favSize]
   );
 
-  const box = {
-    width: size,
-    height: size,
-  } as const;
+  const box = { width: size, height: size } as const;
 
-  if (!src || status === 'error') {
+  if (!sources || status === 'error') {
     return (
       <div
         style={box}
-        className={`flex shrink-0 items-center justify-center rounded-xl bg-slate-100 text-base ${className}`}
+        className={`flex shrink-0 items-center justify-center rounded-xl bg-slate-100 ${className}`}
         aria-hidden
       >
         <span className="leading-none" style={{ fontSize: Math.max(14, size * 0.45) }}>
@@ -58,25 +54,33 @@ function PlatformLogoInner({
   }
 
   return (
-    <div style={box} className={`relative shrink-0 overflow-hidden rounded-xl bg-slate-50 ${className}`}>
+    <div
+      style={box}
+      className={`relative shrink-0 overflow-hidden rounded-xl bg-slate-50 ${className}`}
+    >
       {status === 'loading' && (
         <div className="absolute inset-0 animate-pulse bg-slate-100" aria-hidden />
       )}
-      <img
-        src={src}
-        alt=""
-        width={size}
-        height={size}
-        loading={priority ? 'eager' : 'lazy'}
-        decoding="async"
-        fetchPriority={priority ? 'high' : 'low'}
-        referrerPolicy="no-referrer"
-        className={`h-full w-full object-contain transition-opacity duration-200 ${
-          status === 'ok' ? 'opacity-100' : 'opacity-0'
-        }`}
-        onLoad={() => setStatus('ok')}
-        onError={() => setStatus('error')}
-      />
+      <picture>
+        <source type="image/avif" srcSet={sources.avif} />
+        <source type="image/webp" srcSet={sources.webp} />
+        <img
+          src={sources.original}
+          alt=""
+          width={size}
+          height={size}
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+          // @ts-expect-error fetchPriority tipado en React 19+
+          fetchPriority={priority ? 'high' : 'low'}
+          referrerPolicy="no-referrer"
+          className={`h-full w-full object-contain transition-opacity duration-200 ${
+            status === 'ok' ? 'opacity-100' : 'opacity-0'
+          }`}
+          onLoad={() => setStatus('ok')}
+          onError={() => setStatus('error')}
+        />
+      </picture>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   blockBadMethods,
   securityHeaders,
 } from './middleware/security.middleware';
+import { ensurePlatformsSeeded } from './services/seed.service';
 import authRoutes from './routes/auth.routes';
 import platformsRoutes from './routes/platforms.routes';
 import subscriptionsRoutes from './routes/subscriptions.routes';
@@ -84,11 +85,16 @@ async function startServer() {
   try {
     if (env.DATABASE_URL && env.DATABASE_URL.includes('postgresql')) {
       await connectDatabase();
+      // Si el catálogo está vacío (p. ej. primera vez en Render/Supabase), lo carga
+      try {
+        await ensurePlatformsSeeded();
+      } catch (seedErr) {
+        console.error('⚠️  No se pudo sembrar plataformas:', seedErr);
+      }
     } else {
       console.warn('⚠️  DATABASE_URL no configurada o inválida.');
     }
 
-    // 0.0.0.0 = accesible desde el celular en la misma WiFi
     app.listen(env.PORT, '0.0.0.0', () => {
       console.log('');
       console.log('🚀 EnQuéGasto Backend');

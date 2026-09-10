@@ -60,9 +60,8 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <footer className="relative z-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-4 text-center text-[11px] text-slate-400">
-        EnQuéGasto · Chile 🇨🇱
-      </footer>
+      {/* Sin footer global: se colaba sobre modales como texto fantasma */}
+      <div className="h-[max(1.5rem,env(safe-area-inset-bottom))]" />
       <InstallPrompt />
     </div>
   );

@@ -40,7 +40,7 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
     setSelectedPlan(plan.id);
     setAmount(String(plan.price));
     setName(`${platform?.name || ''} · ${plan.name}`.trim());
-    setBillingCycle('MONTHLY');
+    setBillingCycle(plan.cycle || 'MONTHLY');
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -81,28 +81,24 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative z-10 flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-slate-200/80 bg-white shadow-[0_24px_60px_-20px_rgba(15,23,42,0.35)] sm:rounded-[1.75rem]">
+      <div className="relative z-10 flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] border border-slate-200/80 bg-white shadow-xl sm:rounded-[1.75rem]">
         <div className="overflow-y-auto p-5 sm:p-6">
           <div className="mb-5 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                 {isEdit ? 'Editar' : 'Nueva'}
               </p>
-              <h2 className="font-display text-lg font-semibold tracking-tight text-slate-900">
+              <h2 className="font-display text-lg font-semibold text-slate-900">
                 {isEdit ? 'Editar suscripción' : 'Agregar suscripción'}
               </h2>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-            >
-              <X size={18} strokeWidth={1.75} />
+            <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100">
+              <X size={18} />
             </button>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-xl border border-rose-200/80 bg-rose-50 px-3.5 py-3 text-sm text-rose-700">
+            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700">
               {error}
             </div>
           )}
@@ -116,29 +112,37 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
             {plans.length > 0 && (
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                  Plan / cuenta
+                  Plan / membresía (Chile)
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col gap-2">
                   {plans.map((plan) => (
                     <button
                       key={plan.id}
                       type="button"
                       onClick={() => applyPlan(plan)}
-                      className={`rounded-full border px-3 py-1.5 text-left text-xs font-semibold transition-all ${
+                      className={`flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-left transition-all ${
                         selectedPlan === plan.id
-                          ? 'border-rose-500 bg-rose-50 text-rose-700 ring-2 ring-rose-500/20'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                          ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-500/20'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
-                      <span className="block">{plan.name}</span>
-                      <span className="currency font-normal text-slate-500">
-                        ${plan.price.toLocaleString('es-CL')}/mes
-                      </span>
+                      <div>
+                        <div className="text-sm font-semibold text-slate-800">{plan.name}</div>
+                        {plan.note && <div className="text-[11px] text-slate-400">{plan.note}</div>}
+                      </div>
+                      <div className="text-right">
+                        <div className="currency text-sm font-semibold text-slate-900">
+                          ${plan.price.toLocaleString('es-CL')}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {plan.cycle === 'YEARLY' ? '/año' : '/mes'}
+                        </div>
+                      </div>
                     </button>
                   ))}
                 </div>
                 <p className="mt-1.5 text-[11px] text-slate-400">
-                  Precios referenciales en Chile. Puedes ajustar el monto.
+                  Precios referenciales en Chile. Puedes ajustar el monto si pagas otra tarifa.
                 </p>
               </div>
             )}
@@ -149,7 +153,7 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                placeholder="Netflix Premium…"
+                placeholder="Netflix · Premium"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm outline-none focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-500/10"
               />
             </div>
@@ -161,7 +165,7 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
                 onChange={(e) => setAmount(e.target.value)}
                 required
                 inputMode="numeric"
-                placeholder="7990"
+                placeholder="9990"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm outline-none focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-500/10"
               />
             </div>
@@ -191,18 +195,18 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
               />
             </div>
 
-            <div className="flex gap-2 pt-2 pb-[env(safe-area-inset-bottom)]">
+            <div className="flex gap-2 pb-[env(safe-area-inset-bottom)] pt-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                className="flex-1 rounded-full border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 rounded-full bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_10px_24px_-8px_rgba(225,29,72,0.5)] hover:bg-rose-500 disabled:opacity-50"
+                className="flex-1 rounded-full bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
               >
                 {loading ? 'Guardando…' : isEdit ? 'Guardar' : 'Agregar'}
               </button>

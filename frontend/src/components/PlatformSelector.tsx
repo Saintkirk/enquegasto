@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import api from '../api/client';
 import type { Platform } from '../types';
 import { platformLogo } from '../utils/logo';
+import { CATEGORY_META } from '../data/platformPlans';
 import { Search, X } from 'lucide-react';
 
 interface Props {
@@ -10,41 +11,26 @@ interface Props {
   disabled?: boolean;
 }
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  Streaming: '🎬',
-  Gaming: '🎮',
-  Música: '🎵',
-  Deportes: '⚽',
-  Productividad: '💼',
-  Seguridad: '🔐',
-  IA: '🤖',
-  Diseño: '🎨',
-  Educación: '📚',
-  Noticias: '📰',
-  Finanzas: '💰',
-  Delivery: '🚗',
-  Desarrollo: '💻',
-  Citas: '💕',
-  Telecom: '📡',
-  Lectura: '📖',
-  Salud: '💪',
-  Otros: '📦',
-};
-
 export default function PlatformSelector({ value, onChange, disabled }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string | null>(null);
-  const [categories, setCategories] = useState<{ name: string; count: number }[]>([]);
+  const [apiCategories, setApiCategories] = useState<{ name: string; count: number }[]>([]);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const categoryChips = useMemo(() => {
+    const counts = Object.fromEntries(apiCategories.map((c) => [c.name, c.count]));
+    return CATEGORY_META.filter((c) => (counts[c.id] ?? 0) > 0 || !apiCategories.length).map((c) => ({
+      ...c,
+      count: counts[c.id] ?? 0,
+    }));
+  }, [apiCategories]);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -54,8 +40,8 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
     if (!open) return;
     api
       .get('/platforms/categories')
-      .then((res) => setCategories(res.data.categories || []))
-      .catch(() => setCategories([]));
+      .then((res) => setApiCategories(res.data.categories || []))
+      .catch(() => setApiCategories([]));
   }, [open]);
 
   useEffect(() => {
@@ -67,13 +53,13 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
           params: {
             search: search || undefined,
             category: category || undefined,
-            limit: 100,
+            limit: 120,
           },
         })
         .then((res) => setPlatforms(res.data.platforms || []))
         .catch(() => setPlatforms([]))
         .finally(() => setLoading(false));
-    }, 200);
+    }, 180);
     return () => clearTimeout(timer);
   }, [search, category, open]);
 
@@ -91,6 +77,10 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
   };
 
   const logo = value ? platformLogo(value) : null;
+  const emoji =
+    CATEGORY_META.find((c) => c.id === value?.category)?.emoji ||
+    CATEGORY_META.find((c) => c.id === category)?.emoji ||
+    '📦';
 
   return (
     <div ref={containerRef} className="relative">
@@ -99,9 +89,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
           {logo ? (
             <img src={logo} alt="" className="h-7 w-7 rounded-lg bg-white object-contain" />
           ) : (
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-200 text-xs">
-              {CATEGORY_EMOJI[value.category] || '📦'}
-            </div>
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-200 text-xs">{emoji}</div>
           )}
           <div className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium text-slate-800">{value.name}</span>
@@ -111,21 +99,14 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
             <span className="currency text-xs text-slate-400">{value.priceMonthlyFormatted}</span>
           )}
           {!disabled && (
-            <button
-              type="button"
-              onClick={clear}
-              className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-slate-600"
-            >
+            <button type="button" onClick={clear} className="rounded-lg p-1 text-slate-400 hover:bg-white">
               <X size={14} />
             </button>
           )}
         </div>
       ) : (
         <div className="relative">
-          <Search
-            size={16}
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-          />
+          <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={search}
@@ -135,32 +116,45 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
             }}
             onFocus={() => setOpen(true)}
             disabled={disabled}
-            placeholder="Buscar o elige categoría…"
+            placeholder="Buscar Netflix, TNT Sports…"
             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-500/10"
           />
         </div>
       )}
 
       {open && !value && (
-        <div className="absolute z-40 mt-1.5 max-h-[min(60vh,20rem)] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl">
+        <div className="absolute z-40 mt-1.5 flex max-h-[min(70vh,24rem)] w-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl">
           <div className="flex gap-1.5 overflow-x-auto border-b border-slate-100 px-2.5 py-2">
             <Chip active={!category} onClick={() => setCategory(null)}>
               Todas
             </Chip>
-            {categories.map((c) => (
-              <Chip key={c.name} active={category === c.name} onClick={() => setCategory(c.name)}>
-                {CATEGORY_EMOJI[c.name] || '•'} {c.name}
+            {categoryChips.map((c) => (
+              <Chip key={c.id} active={category === c.id} onClick={() => setCategory(c.id)}>
+                {c.emoji} {c.label}
+                {c.count > 0 ? ` (${c.count})` : ''}
               </Chip>
             ))}
           </div>
-          <div className="max-h-52 overflow-y-auto py-1">
+
+          {category && (
+            <div className="border-b border-slate-50 bg-slate-50/80 px-3 py-1.5 text-[11px] font-medium text-slate-500">
+              {CATEGORY_META.find((c) => c.id === category)?.emoji}{' '}
+              {category} · {platforms.length} resultado{platforms.length !== 1 ? 's' : ''}
+              {search ? ` · “${search}”` : ''}
+            </div>
+          )}
+
+          <div className="flex-1 overflow-y-auto py-1">
             {loading ? (
               <div className="px-3 py-4 text-center text-sm text-slate-400">Buscando…</div>
             ) : platforms.length === 0 ? (
-              <div className="px-3 py-4 text-center text-sm text-slate-400">Sin resultados</div>
+              <div className="px-3 py-4 text-center text-sm text-slate-400">
+                Sin resultados{category ? ` en ${category}` : ''}
+              </div>
             ) : (
               platforms.map((p) => {
                 const img = platformLogo(p);
+                const em = CATEGORY_META.find((c) => c.id === p.category)?.emoji || '📦';
                 return (
                   <button
                     key={p.id}
@@ -172,13 +166,13 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
                       <img src={img} alt="" className="h-8 w-8 rounded-lg bg-slate-50 object-contain" />
                     ) : (
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-sm">
-                        {CATEGORY_EMOJI[p.category] || '📦'}
+                        {em}
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium text-slate-900">{p.name}</div>
                       <div className="text-[11px] text-slate-400">
-                        {CATEGORY_EMOJI[p.category] || ''} {p.category}
+                        {em} {p.category}
                       </div>
                     </div>
                     {p.priceMonthlyFormatted && (

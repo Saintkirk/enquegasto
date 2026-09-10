@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import api from '../api/client';
 import type { Platform } from '../types';
+import { platformLogo } from '../utils/logo';
 import { Search, X } from 'lucide-react';
 
 interface Props {
@@ -66,7 +67,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
           params: {
             search: search || undefined,
             category: category || undefined,
-            limit: 80,
+            limit: 100,
           },
         })
         .then((res) => setPlatforms(res.data.platforms || []))
@@ -89,14 +90,16 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
     setCategory(null);
   };
 
+  const logo = value ? platformLogo(value) : null;
+
   return (
     <div ref={containerRef} className="relative">
       {value ? (
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2">
-          {value.logoUrl ? (
-            <img src={value.logoUrl} alt="" className="h-6 w-6 rounded-lg object-contain" />
+          {logo ? (
+            <img src={logo} alt="" className="h-7 w-7 rounded-lg bg-white object-contain" />
           ) : (
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-200 text-[10px]">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-200 text-xs">
               {CATEGORY_EMOJI[value.category] || '📦'}
             </div>
           )}
@@ -111,7 +114,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
             <button
               type="button"
               onClick={clear}
-              className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-white hover:text-slate-600"
+              className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-slate-600"
             >
               <X size={14} />
             </button>
@@ -121,7 +124,6 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
         <div className="relative">
           <Search
             size={16}
-            strokeWidth={1.75}
             className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
           />
           <input
@@ -133,16 +135,15 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
             }}
             onFocus={() => setOpen(true)}
             disabled={disabled}
-            placeholder="Buscar o elige una categoría…"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-3 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-500/10"
+            placeholder="Buscar o elige categoría…"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-500/10"
           />
         </div>
       )}
 
       {open && !value && (
-        <div className="absolute z-30 mt-1.5 max-h-[min(70vh,22rem)] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_16px_40px_-12px_rgba(15,23,42,0.2)]">
-          {/* Chips de categoría */}
-          <div className="flex gap-1.5 overflow-x-auto border-b border-slate-100 px-2.5 py-2 scrollbar-none">
+        <div className="absolute z-40 mt-1.5 max-h-[min(60vh,20rem)] w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl">
+          <div className="flex gap-1.5 overflow-x-auto border-b border-slate-100 px-2.5 py-2">
             <Chip active={!category} onClick={() => setCategory(null)}>
               Todas
             </Chip>
@@ -152,43 +153,40 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
               </Chip>
             ))}
           </div>
-
-          <div className="max-h-56 overflow-y-auto py-1">
+          <div className="max-h-52 overflow-y-auto py-1">
             {loading ? (
               <div className="px-3 py-4 text-center text-sm text-slate-400">Buscando…</div>
             ) : platforms.length === 0 ? (
-              <div className="px-3 py-4 text-center text-sm text-slate-400">
-                No encontramos plataformas
-                {category ? ` en ${category}` : ''}
-              </div>
+              <div className="px-3 py-4 text-center text-sm text-slate-400">Sin resultados</div>
             ) : (
-              platforms.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => select(p)}
-                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-slate-50 active:bg-rose-50"
-                >
-                  {p.logoUrl ? (
-                    <img src={p.logoUrl} alt="" className="h-7 w-7 rounded-lg object-contain" />
-                  ) : (
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-xs">
-                      {CATEGORY_EMOJI[p.category] || '📦'}
+              platforms.map((p) => {
+                const img = platformLogo(p);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => select(p)}
+                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-slate-50"
+                  >
+                    {img ? (
+                      <img src={img} alt="" className="h-8 w-8 rounded-lg bg-slate-50 object-contain" />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-sm">
+                        {CATEGORY_EMOJI[p.category] || '📦'}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-slate-900">{p.name}</div>
+                      <div className="text-[11px] text-slate-400">
+                        {CATEGORY_EMOJI[p.category] || ''} {p.category}
+                      </div>
                     </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-slate-900">{p.name}</div>
-                    <div className="text-[11px] text-slate-400">
-                      {CATEGORY_EMOJI[p.category] || ''} {p.category}
-                    </div>
-                  </div>
-                  {p.priceMonthlyFormatted && (
-                    <div className="currency whitespace-nowrap text-xs tabular-nums text-slate-500">
-                      {p.priceMonthlyFormatted}
-                    </div>
-                  )}
-                </button>
-              ))
+                    {p.priceMonthlyFormatted && (
+                      <div className="currency text-xs text-slate-500">{p.priceMonthlyFormatted}</div>
+                    )}
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
@@ -210,10 +208,8 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-        active
-          ? 'bg-rose-600 text-white shadow-sm'
-          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+        active ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'
       }`}
     >
       {children}

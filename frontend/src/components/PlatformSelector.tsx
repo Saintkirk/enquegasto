@@ -3,7 +3,7 @@ import api from '../api/client';
 import type { Platform } from '../types';
 import { platformLogo } from '../utils/logo';
 import { CATEGORY_META } from '../data/platformPlans';
-import { Search, X } from 'lucide-react';
+import { Search, X, ChevronLeft, LayoutGrid } from 'lucide-react';
 
 interface Props {
   value?: Platform | null;
@@ -11,26 +11,33 @@ interface Props {
   disabled?: boolean;
 }
 
+type Step = 'categories' | 'list';
+
 export default function PlatformSelector({ value, onChange, disabled }: Props) {
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<Step>('categories');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string | null>(null);
   const [apiCategories, setApiCategories] = useState<{ name: string; count: number }[]>([]);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const categoryChips = useMemo(() => {
+  const categoryCards = useMemo(() => {
     const counts = Object.fromEntries(apiCategories.map((c) => [c.name, c.count]));
-    return CATEGORY_META.filter((c) => (counts[c.id] ?? 0) > 0 || !apiCategories.length).map((c) => ({
+    // Mostrar todas las meta; si API no tiene count, igual se listan
+    return CATEGORY_META.map((c) => ({
       ...c,
       count: counts[c.id] ?? 0,
-    }));
+    })).filter((c) => c.count > 0 || apiCategories.length === 0);
   }, [apiCategories]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -44,8 +51,9 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
       .catch(() => setApiCategories([]));
   }, [open]);
 
+  // Cargar plataformas cuando hay categoría o búsqueda activa
   useEffect(() => {
-    if (!open) return;
+    if (!open || step !== 'list') return;
     const timer = setTimeout(() => {
       setLoading(true);
       api
@@ -53,160 +61,226 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
           params: {
             search: search || undefined,
             category: category || undefined,
-            limit: 120,
+            limit: 150,
           },
         })
         .then((res) => setPlatforms(res.data.platforms || []))
         .catch(() => setPlatforms([]))
         .finally(() => setLoading(false));
-    }, 180);
+    }, 150);
     return () => clearTimeout(timer);
-  }, [search, category, open]);
+  }, [search, category, open, step]);
+
+  const openPicker = () => {
+    if (disabled) return;
+    setOpen(true);
+    setStep('categories');
+    setSearch('');
+    setCategory(null);
+  };
+
+  const pickCategory = (id: string | null) => {
+    setCategory(id);
+    setSearch('');
+    setStep('list');
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
 
   const select = (p: Platform) => {
     onChange(p);
     setOpen(false);
     setSearch('');
     setCategory(null);
+    setStep('categories');
   };
 
   const clear = () => {
     onChange(null);
     setSearch('');
     setCategory(null);
+    setStep('categories');
+  };
+
+  const backToCategories = () => {
+    setStep('categories');
+    setSearch('');
+    setCategory(null);
   };
 
   const logo = value ? platformLogo(value) : null;
-  const emoji =
-    CATEGORY_META.find((c) => c.id === value?.category)?.emoji ||
-    CATEGORY_META.find((c) => c.id === category)?.emoji ||
-    '📦';
+  const valueEmoji = CATEGORY_META.find((c) => c.id === value?.category)?.emoji || '📦';
 
   return (
     <div ref={containerRef} className="relative">
       {value ? (
-        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2">
+        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
           {logo ? (
-            <img src={logo} alt="" className="h-7 w-7 rounded-lg bg-white object-contain" />
+            <img src={logo} alt="" className="h-8 w-8 rounded-lg bg-white object-contain" />
           ) : (
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-200 text-xs">{emoji}</div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-200 text-sm">
+              {valueEmoji}
+            </div>
           )}
           <div className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium text-slate-800">{value.name}</span>
-            <span className="text-[10px] text-slate-400">{value.category}</span>
+            <span className="text-[10px] text-slate-400">
+              {valueEmoji} {value.category}
+            </span>
           </div>
           {value.priceMonthlyFormatted && (
             <span className="currency text-xs text-slate-400">{value.priceMonthlyFormatted}</span>
           )}
           {!disabled && (
-            <button type="button" onClick={clear} className="rounded-lg p-1 text-slate-400 hover:bg-white">
-              <X size={14} />
+            <button type="button" onClick={clear} className="rounded-lg p-1.5 text-slate-400 hover:bg-white">
+              <X size={16} />
             </button>
           )}
         </div>
       ) : (
-        <div className="relative">
-          <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setOpen(true);
-            }}
-            onFocus={() => setOpen(true)}
-            disabled={disabled}
-            placeholder="Buscar Netflix, TNT Sports…"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-rose-300 focus:bg-white focus:ring-4 focus:ring-rose-500/10"
-          />
-        </div>
+        <button
+          type="button"
+          onClick={openPicker}
+          disabled={disabled}
+          className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-left text-sm text-slate-400 transition-colors hover:border-rose-300 hover:bg-white focus:border-rose-300 focus:outline-none focus:ring-4 focus:ring-rose-500/10"
+        >
+          <Search size={16} className="shrink-0 text-slate-400" />
+          <span>Elegir categoría o buscar…</span>
+        </button>
       )}
 
       {open && !value && (
-        <div className="absolute z-40 mt-1.5 flex max-h-[min(70vh,24rem)] w-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl">
-          <div className="flex gap-1.5 overflow-x-auto border-b border-slate-100 px-2.5 py-2">
-            <Chip active={!category} onClick={() => setCategory(null)}>
-              Todas
-            </Chip>
-            {categoryChips.map((c) => (
-              <Chip key={c.id} active={category === c.id} onClick={() => setCategory(c.id)}>
-                {c.emoji} {c.label}
-                {c.count > 0 ? ` (${c.count})` : ''}
-              </Chip>
-            ))}
-          </div>
-
-          {category && (
-            <div className="border-b border-slate-50 bg-slate-50/80 px-3 py-1.5 text-[11px] font-medium text-slate-500">
-              {CATEGORY_META.find((c) => c.id === category)?.emoji}{' '}
-              {category} · {platforms.length} resultado{platforms.length !== 1 ? 's' : ''}
-              {search ? ` · “${search}”` : ''}
+        <div className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.25)]">
+          {/* ——— PASO 1: grilla de categorías ——— */}
+          {step === 'categories' && (
+            <div className="max-h-[min(70vh,26rem)] overflow-y-auto p-3">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                Elige una categoría
+              </p>
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={() => pickCategory(null)}
+                  className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-left hover:border-rose-300 hover:bg-rose-50 active:scale-[0.99]"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-lg shadow-sm">
+                    <LayoutGrid size={18} className="text-rose-600" />
+                  </span>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-900">Todas las plataformas</div>
+                    <div className="text-[11px] text-slate-400">Buscar en el catálogo completo</div>
+                  </div>
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {categoryCards.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => pickCategory(c.id)}
+                    className="flex flex-col items-start gap-1 rounded-xl border border-slate-200 bg-white p-3 text-left transition-all hover:border-rose-300 hover:bg-rose-50/50 active:scale-[0.98]"
+                  >
+                    <span className="text-2xl leading-none">{c.emoji}</span>
+                    <span className="text-sm font-semibold text-slate-900">{c.label}</span>
+                    {c.count > 0 && (
+                      <span className="text-[10px] font-medium text-slate-400">{c.count} servicios</span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto py-1">
-            {loading ? (
-              <div className="px-3 py-4 text-center text-sm text-slate-400">Buscando…</div>
-            ) : platforms.length === 0 ? (
-              <div className="px-3 py-4 text-center text-sm text-slate-400">
-                Sin resultados{category ? ` en ${category}` : ''}
+          {/* ——— PASO 2: lista de plataformas ——— */}
+          {step === 'list' && (
+            <div className="flex max-h-[min(70vh,26rem)] flex-col">
+              <div className="flex items-center gap-1 border-b border-slate-100 px-2 py-2">
+                <button
+                  type="button"
+                  onClick={backToCategories}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100"
+                  aria-label="Volver a categorías"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <div className="relative min-w-0 flex-1">
+                  <Search
+                    size={14}
+                    className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder={
+                      category
+                        ? `Buscar en ${category}…`
+                        : 'Buscar Netflix, TNT Sports…'
+                    }
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-8 pr-3 text-sm outline-none focus:border-rose-300 focus:bg-white"
+                  />
+                </div>
               </div>
-            ) : (
-              platforms.map((p) => {
-                const img = platformLogo(p);
-                const em = CATEGORY_META.find((c) => c.id === p.category)?.emoji || '📦';
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => select(p)}
-                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-slate-50"
-                  >
-                    {img ? (
-                      <img src={img} alt="" className="h-8 w-8 rounded-lg bg-slate-50 object-contain" />
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-sm">
-                        {em}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-slate-900">{p.name}</div>
-                      <div className="text-[11px] text-slate-400">
-                        {em} {p.category}
-                      </div>
-                    </div>
-                    {p.priceMonthlyFormatted && (
-                      <div className="currency text-xs text-slate-500">{p.priceMonthlyFormatted}</div>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
+
+              <div className="border-b border-slate-50 bg-slate-50/90 px-3 py-1.5 text-[11px] font-medium text-slate-500">
+                {category
+                  ? `${CATEGORY_META.find((c) => c.id === category)?.emoji || ''} ${category}`
+                  : '📦 Todas'}
+                {' · '}
+                {loading ? '…' : `${platforms.length} resultado${platforms.length !== 1 ? 's' : ''}`}
+              </div>
+
+              <div className="flex-1 overflow-y-auto py-1">
+                {loading ? (
+                  <div className="px-3 py-8 text-center text-sm text-slate-400">Cargando…</div>
+                ) : platforms.length === 0 ? (
+                  <div className="px-3 py-8 text-center text-sm text-slate-400">
+                    No hay plataformas
+                    {category ? ` en ${category}` : ''}
+                    {search ? ` con “${search}”` : ''}
+                  </div>
+                ) : (
+                  platforms.map((p) => {
+                    const img = platformLogo(p);
+                    const em = CATEGORY_META.find((c) => c.id === p.category)?.emoji || '📦';
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => select(p)}
+                        className="flex w-full items-center gap-3 px-3 py-3 text-left active:bg-rose-50 hover:bg-slate-50"
+                      >
+                        {img ? (
+                          <img
+                            src={img}
+                            alt=""
+                            className="h-9 w-9 shrink-0 rounded-xl bg-slate-50 object-contain"
+                          />
+                        ) : (
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-base">
+                            {em}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-semibold text-slate-900">{p.name}</div>
+                          <div className="text-[11px] text-slate-400">
+                            {em} {p.category}
+                          </div>
+                        </div>
+                        {p.priceMonthlyFormatted && (
+                          <div className="currency shrink-0 text-xs font-medium text-slate-500">
+                            {p.priceMonthlyFormatted}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
-  );
-}
-
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-        active ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'
-      }`}
-    >
-      {children}
-    </button>
   );
 }

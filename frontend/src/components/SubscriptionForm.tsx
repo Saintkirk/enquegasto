@@ -52,9 +52,7 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
   const computedTotal = useMemo(() => {
     if (!selectedBase) return null;
     let total = selectedBase.price;
-    for (const a of addons) {
-      total += a.price * (addonQty[a.id] || 0);
-    }
+    for (const a of addons) total += a.price * (addonQty[a.id] || 0);
     return total;
   }, [selectedBase, addons, addonQty]);
 
@@ -141,26 +139,23 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
     try {
       if (isEdit && initial) {
         const res = await api.patch(`/subscriptions/${initial.id}`, payload);
-        const sub = res.data.subscription || res.data;
-        onUpdated(sub);
+        onUpdated(res.data.subscription || res.data);
       } else {
         const res = await api.post('/subscriptions', payload);
-        const sub = res.data.subscription || res.data;
-        onCreated(sub);
+        onCreated(res.data.subscription || res.data);
       }
       onClose();
     } catch (err: unknown) {
       const ax = err as {
-        response?: { data?: { message?: string; error?: string; details?: unknown } };
+        response?: { data?: { message?: string; error?: string } };
         message?: string;
       };
-      const msg =
+      setError(
         ax.response?.data?.message ||
-        ax.response?.data?.error ||
-        ax.message ||
-        'No pudimos guardar la suscripción';
-      setError(String(msg));
-      console.error('Error guardar suscripción', ax.response?.data || err);
+          ax.response?.data?.error ||
+          ax.message ||
+          'No pudimos guardar la suscripción'
+      );
     } finally {
       setLoading(false);
     }
@@ -168,40 +163,28 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-[300] flex items-end justify-center sm:items-center"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="eqg-sub-form-title"
     >
-      <button
-        type="button"
-        className="absolute inset-0 bg-slate-900/50"
-        aria-label="Cerrar"
-        onClick={onClose}
-      />
+      {/* Capa opaca total — nada del layout se ve ni recibe toques */}
+      <div className="absolute inset-0 bg-slate-950/60" onClick={onClose} aria-hidden />
 
-      <div className="relative z-10 flex max-h-[min(92dvh,40rem)] w-full max-w-md flex-col overflow-hidden rounded-t-[1.75rem] bg-white shadow-2xl sm:rounded-[1.75rem]">
-        {/* Header fijo */}
+      <div className="relative z-10 flex max-h-[min(94dvh,42rem)] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
               {isEdit ? 'Editar' : 'Nueva'}
             </p>
-            <h2 id="eqg-sub-form-title" className="font-display text-lg font-semibold text-slate-900">
+            <h2 className="font-display text-lg font-semibold text-slate-900">
               {isEdit ? 'Editar suscripción' : 'Agregar suscripción'}
             </h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl p-2 text-slate-400 hover:bg-slate-100"
-            aria-label="Cerrar"
-          >
+          <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100">
             <X size={18} />
           </button>
         </div>
 
-        {/* Cuerpo scrolleable */}
         <form id="eqg-subscription-form" onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
             {error && (
@@ -218,9 +201,7 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
 
               {basePlans.length > 0 && (
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">
-                    Plan / membresía
-                  </label>
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-600">Plan / membresía</label>
                   <div className="flex flex-col gap-2">
                     {basePlans.map((plan) => (
                       <button
@@ -256,8 +237,8 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
                   <label className="mb-1.5 block text-xs font-semibold text-slate-600">
                     Opcional · miembros extra
                   </label>
-                  <p className="mb-2 text-[11px] leading-snug text-slate-400">
-                    Netflix: solo Estándar (máx. 1) o Premium (máx. 2). Elige un tipo.
+                  <p className="mb-2 text-[11px] text-slate-400">
+                    Netflix: Estándar máx. 1 · Premium máx. 2
                   </p>
                   <div className="flex flex-col gap-2">
                     {addons.map((addon) => {
@@ -284,7 +265,7 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
                                 type="button"
                                 disabled={qty <= 0}
                                 onClick={() => setQty(addon, qty - 1)}
-                                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 disabled:opacity-30"
+                                className="flex h-9 w-9 items-center justify-center rounded-xl border disabled:opacity-30"
                               >
                                 <Minus size={16} />
                               </button>
@@ -293,7 +274,7 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
                                 type="button"
                                 disabled={qty >= max}
                                 onClick={() => setQty(addon, qty + 1)}
-                                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 disabled:opacity-30"
+                                className="flex h-9 w-9 items-center justify-center rounded-xl border disabled:opacity-30"
                               >
                                 <Plus size={16} />
                               </button>
@@ -306,19 +287,12 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
                 </div>
               )}
 
-              {selectedPlanId === 'basico' && platform?.slug === 'netflix' && (
-                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-                  El plan Básico no permite miembros extra. Usa Estándar o Premium.
-                </p>
-              )}
-
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-600">Nombre</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  placeholder="Netflix · Premium"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm outline-none focus:border-rose-300 focus:bg-white"
                 />
               </div>
@@ -330,7 +304,6 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
                   onChange={(e) => setAmount(e.target.value)}
                   required
                   inputMode="numeric"
-                  placeholder="9990"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm outline-none focus:border-rose-300 focus:bg-white"
                 />
               </div>
@@ -362,21 +335,21 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
             </div>
           </div>
 
-          {/* Barra de acciones fija — siempre visible y clickeable */}
-          <div className="shrink-0 border-t border-slate-100 bg-white px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+          {/* Acciones fijas, z alto, sin nada encima */}
+          <div className="relative z-20 shrink-0 border-t border-slate-100 bg-white px-5 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3">
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="flex-1 rounded-full border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 active:bg-slate-50"
+                className="flex-1 rounded-full border border-slate-200 px-4 py-3.5 text-sm font-semibold text-slate-600 active:bg-slate-50"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 rounded-full bg-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-md active:scale-[0.98] disabled:opacity-50"
+                className="flex-1 rounded-full bg-rose-600 px-4 py-3.5 text-sm font-semibold text-white shadow-md active:scale-[0.98] disabled:opacity-50"
               >
                 {loading ? 'Guardando…' : isEdit ? 'Guardar' : 'Agregar'}
               </button>

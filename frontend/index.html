@@ -15,10 +15,8 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <!-- CDNs de fuentes e imágenes optimizadas -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://wsrv.nl" crossorigin />
     <link rel="dns-prefetch" href="https://www.google.com" />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>EnQuéGasto — Controla tus suscripciones</title>
@@ -27,14 +25,22 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Forzar actualización del SW (limpia caches viejos con footer fantasma)
       if ('serviceWorker' in navigator) {
-        const registerSW = () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        const boot = async () => {
+          try {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (const reg of regs) {
+              reg.active && reg.active.postMessage('CLEAR_CACHES');
+              reg.active && reg.active.postMessage('SKIP_WAITING');
+            }
+            await navigator.serviceWorker.register('/sw.js?v=4');
+          } catch (e) {}
         };
         if ('requestIdleCallback' in window) {
-          requestIdleCallback(() => registerSW(), { timeout: 4000 });
+          requestIdleCallback(() => boot(), { timeout: 3000 });
         } else {
-          window.addEventListener('load', () => setTimeout(registerSW, 200));
+          window.addEventListener('load', () => setTimeout(boot, 100));
         }
       }
     </script>

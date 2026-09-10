@@ -14,7 +14,8 @@ export default function Layout() {
 
   return (
     <div className="relative min-h-[100dvh] bg-[#faf9f8]">
-      <div className="eqg-grain pointer-events-none fixed inset-0 z-0 opacity-[0.025]" />
+      <div className="eqg-grain pointer-events-none fixed inset-0 z-0 opacity-[0.025]" aria-hidden />
+
       <header className="sticky top-0 z-40 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-4 sm:pt-4">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between rounded-2xl border border-white/60 bg-white/80 px-3 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:px-4">
           <Link
@@ -56,12 +57,11 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto max-w-6xl px-4 py-5 sm:py-8">
+      <main className="relative z-10 mx-auto max-w-6xl px-4 py-5 pb-24 sm:py-8 sm:pb-8">
         <Outlet />
       </main>
 
-      {/* Sin footer global: se colaba sobre modales como texto fantasma */}
-      <div className="h-[max(1.5rem,env(safe-area-inset-bottom))]" />
+      {/* NO footer de marca: tapaba Cancelar/Agregar en modales */}
       <InstallPrompt />
     </div>
   );

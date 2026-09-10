@@ -3,8 +3,9 @@ import api from '../api/client';
 import LoadingScreen from '../components/LoadingScreen';
 import type { Subscription } from '../types';
 import { formatPercent } from '../utils/format';
-import { platformLogo } from '../utils/logo';
+import PlatformLogo from '../components/PlatformLogo';
 import SubscriptionForm from '../components/SubscriptionForm';
+import { CATEGORY_META } from '../data/platformPlans';
 import { Plus, Ghost, Pencil, Trash2, MoreVertical } from 'lucide-react';
 
 export default function Subscriptions() {
@@ -101,20 +102,16 @@ export default function Subscriptions() {
           <ul className="divide-y divide-slate-100">
             {subs.map((sub, index) => {
               const openUp = index >= subs.length - 2;
-              const logo = platformLogo(sub.platform || {});
+              const em =
+                CATEGORY_META.find((c) => c.id === (sub.platform as any)?.category)?.emoji || '💳';
               return (
                 <li key={sub.id} className="relative flex items-center gap-3 px-4 py-3.5 sm:px-5">
-                  {logo ? (
-                    <img
-                      src={logo}
-                      alt=""
-                      className="h-10 w-10 shrink-0 rounded-xl bg-slate-50 object-contain"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-sm">
-                      💳
-                    </div>
-                  )}
+                  <PlatformLogo
+                    platform={sub.platform}
+                    size={40}
+                    fallback={em}
+                    priority={index < 6}
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-sm font-semibold text-slate-900">{sub.name}</span>
@@ -189,7 +186,6 @@ export default function Subscriptions() {
         </div>
       )}
 
-      {/* FAB extra en móvil */}
       <button
         type="button"
         onClick={openNew}

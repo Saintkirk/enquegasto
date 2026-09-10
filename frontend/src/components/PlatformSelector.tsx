@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import api from '../api/client';
 import type { Platform } from '../types';
-import { platformLogo } from '../utils/logo';
 import { CATEGORY_META } from '../data/platformPlans';
+import PlatformLogo from './PlatformLogo';
 import { Search, X, ChevronLeft, LayoutGrid, Loader2 } from 'lucide-react';
 
 interface Props {
@@ -98,17 +98,13 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
     [search, category]
   );
 
-  // Primera página al entrar a lista / cambiar filtro
   useEffect(() => {
     if (!open || step !== 'list') return;
     offsetRef.current = 0;
-    const timer = setTimeout(() => {
-      fetchPage(0, false);
-    }, 120);
+    const timer = setTimeout(() => fetchPage(0, false), 120);
     return () => clearTimeout(timer);
   }, [search, category, open, step, fetchPage]);
 
-  // IntersectionObserver: carga más al llegar al final
   useEffect(() => {
     if (!open || step !== 'list' || !hasMore) return;
     const el = sentinelRef.current;
@@ -179,7 +175,6 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
     setPlatforms([]);
   };
 
-  const logo = value ? platformLogo(value) : null;
   const valueEmoji = CATEGORY_META.find((c) => c.id === value?.category)?.emoji || '📦';
   const catMeta = CATEGORY_META.find((c) => c.id === category);
 
@@ -187,13 +182,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
     <div ref={containerRef} className="relative">
       {value ? (
         <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
-          {logo ? (
-            <img src={logo} alt="" className="h-8 w-8 rounded-lg bg-white object-contain" />
-          ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-200 text-sm">
-              {valueEmoji}
-            </div>
-          )}
+          <PlatformLogo platform={value} size={32} fallback={valueEmoji} priority />
           <div className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium text-slate-800">{value.name}</span>
             <span className="text-[10px] text-slate-400">
@@ -323,10 +312,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
                 )}
               </div>
 
-              <div
-                ref={listRef}
-                className="flex-1 overflow-y-auto overscroll-contain py-1"
-              >
+              <div ref={listRef} className="flex-1 overflow-y-auto overscroll-contain py-1">
                 {loading && platforms.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 px-3 py-10 text-sm text-slate-400">
                     <Loader2 size={22} className="animate-spin text-rose-500" />
@@ -341,7 +327,6 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
                 ) : (
                   <>
                     {platforms.map((p) => {
-                      const img = platformLogo(p);
                       const em = CATEGORY_META.find((c) => c.id === p.category)?.emoji || '📦';
                       return (
                         <button
@@ -350,19 +335,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
                           onClick={() => select(p)}
                           className="flex w-full items-center gap-3 px-3 py-3 text-left hover:bg-slate-50 active:bg-rose-50"
                         >
-                          {img ? (
-                            <img
-                              src={img}
-                              alt=""
-                              loading="lazy"
-                              decoding="async"
-                              className="h-9 w-9 shrink-0 rounded-xl bg-slate-50 object-contain"
-                            />
-                          ) : (
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-base">
-                              {em}
-                            </div>
-                          )}
+                          <PlatformLogo platform={p} size={36} fallback={em} />
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-semibold text-slate-900">{p.name}</div>
                             <div className="text-[11px] text-slate-400">
@@ -378,7 +351,6 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
                       );
                     })}
 
-                    {/* Sentinel infinite scroll */}
                     <div ref={sentinelRef} className="h-4 w-full" />
 
                     {loadingMore && (
@@ -389,9 +361,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
                     )}
 
                     {!hasMore && platforms.length > 0 && (
-                      <div className="py-3 text-center text-[11px] text-slate-300">
-                        Fin del listado
-                      </div>
+                      <div className="py-3 text-center text-[11px] text-slate-300">Fin del listado</div>
                     )}
                   </>
                 )}

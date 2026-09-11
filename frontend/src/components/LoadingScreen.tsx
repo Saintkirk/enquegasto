@@ -78,7 +78,9 @@ export default function LoadingScreen({ message, fullScreen = true }: Props) {
           <div className="rounded-[1.75rem] border border-rose-950/5 bg-rose-950/[0.03] p-1.5 shadow-[0_20px_50px_-20px_rgba(225,29,72,0.35)]">
             <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-[calc(1.75rem-0.375rem)] bg-gradient-to-br from-rose-500 to-rose-700 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25)]">
               <span className="eqg-pulse absolute inset-0 rounded-[inherit] bg-white/20" />
-              <span className="relative text-3xl font-semibold tracking-tight text-white" aria-hidden>$</span>
+              <span className="relative text-3xl font-semibold tracking-tight text-white" aria-hidden>
+                $
+              </span>
             </div>
           </div>
         </div>
@@ -109,10 +111,6 @@ export default function LoadingScreen({ message, fullScreen = true }: Props) {
             <div className="eqg-progress h-full rounded-full bg-gradient-to-r from-rose-500 via-rose-600 to-rose-500" />
           </div>
         </div>
-
-        <p className="mt-6 text-[10px] font-medium uppercase tracking-[0.2em] text-slate-400">
-          Chile · CLP
-        </p>
       </div>
     </div>
   );

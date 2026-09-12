@@ -50,7 +50,6 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
       .catch(() => setApiCategories([]));
   }, [open]);
 
-  // Bloquear scroll del body con el sheet abierto
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -105,7 +104,6 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
     return () => clearTimeout(timer);
   }, [search, category, open, step, fetchPage]);
 
-  // Infinite scroll con root = lista scrolleable
   useEffect(() => {
     if (!open || step !== 'list') return;
     const root = listRef.current;
@@ -183,12 +181,10 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
   const sheet =
     open &&
     createPortal(
-      <div className="fixed inset-0 z-[200] flex flex-col bg-black/40" role="dialog" aria-modal="true">
-        {/* toque fuera cierra */}
+      <div className="fixed inset-0 z-[400] flex flex-col bg-black/40" role="dialog" aria-modal="true">
         <button type="button" className="h-[8vh] w-full shrink-0" aria-label="Cerrar" onClick={closePicker} />
 
         <div className="flex min-h-0 flex-1 flex-col rounded-t-3xl bg-white shadow-2xl">
-          {/* Header */}
           <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 px-3 py-3">
             {step === 'list' ? (
               <button
@@ -206,7 +202,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
             <div className="min-w-0 flex-1">
               {step === 'categories' ? (
                 <>
-                  <div className="text-sm font-semibold text-slate-900">Elegir categoría</div>
+                  <div className="text-sm font-semibold text-slate-900">Elegir categoria</div>
                   <div className="text-[11px] text-slate-400">Luego scrollea las plataformas</div>
                 </>
               ) : searchOpen ? (
@@ -220,19 +216,21 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
                     type="search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder={category ? `Buscar en ${category}…` : 'Buscar Netflix, TNT…'}
+                    placeholder={category ? 'Buscar en ' + category + '…' : 'Buscar Netflix, TNT…'}
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-rose-300 focus:bg-white"
                   />
                 </div>
               ) : (
                 <>
                   <div className="truncate text-sm font-semibold text-slate-900">
-                    {catMeta ? `${catMeta.emoji} ${catMeta.label}` : '📦 Todas'}
+                    {catMeta ? catMeta.emoji + ' ' + catMeta.label : 'Todas'}
                   </div>
                   <div className="text-[11px] text-slate-400">
                     {loading
                       ? 'Cargando…'
-                      : `${platforms.length}${total > platforms.length ? ` de ${total}` : ''} servicios`}
+                      : platforms.length +
+                        (total > platforms.length ? ' de ' + total : '') +
+                        ' servicios'}
                   </div>
                 </>
               )}
@@ -253,7 +251,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
                 type="button"
                 onClick={closeSearch}
                 className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
-                aria-label="Cerrar búsqueda"
+                aria-label="Cerrar busqueda"
               >
                 <X size={18} />
               </button>
@@ -268,7 +266,6 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
             </button>
           </div>
 
-          {/* Contenido scrolleable */}
           {step === 'categories' ? (
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
               <button
@@ -281,7 +278,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
                 </span>
                 <div>
                   <div className="text-sm font-semibold text-slate-900">Todas las plataformas</div>
-                  <div className="text-[11px] text-slate-400">Catálogo completo</div>
+                  <div className="text-[11px] text-slate-400">Catalogo completo</div>
                 </div>
               </button>
               <div className="grid grid-cols-2 gap-2.5">
@@ -314,8 +311,8 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
               ) : platforms.length === 0 ? (
                 <div className="px-4 py-16 text-center text-sm text-slate-400">
                   No hay plataformas
-                  {category ? ` en ${category}` : ''}
-                  {search ? ` con “${search}”` : ''}
+                  {category ? ' en ' + category : ''}
+                  {search ? ' con "' + search + '"' : ''}
                 </div>
               ) : (
                 <>
@@ -347,7 +344,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
                   {loadingMore && (
                     <div className="flex items-center justify-center gap-2 py-4 text-xs text-slate-400">
                       <Loader2 size={14} className="animate-spin text-rose-500" />
-                      Cargando más…
+                      Cargando mas…
                     </div>
                   )}
                   {!hasMore && platforms.length > 0 && (
@@ -390,7 +387,7 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
           className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-left text-sm text-slate-400 hover:border-rose-300 hover:bg-white focus:outline-none focus:ring-4 focus:ring-rose-500/10"
         >
           <LayoutGrid size={16} className="shrink-0 text-slate-400" />
-          <span>Elegir categoría…</span>
+          <span>Elegir categoria…</span>
         </button>
       )}
 

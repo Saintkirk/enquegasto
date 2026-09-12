@@ -167,7 +167,6 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
       role="dialog"
       aria-modal="true"
     >
-      {/* Capa opaca total — nada del layout se ve ni recibe toques */}
       <div className="absolute inset-0 bg-slate-950/60" onClick={onClose} aria-hidden />
 
       <div className="relative z-10 flex max-h-[min(94dvh,42rem)] w-full max-w-md flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
@@ -208,11 +207,11 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
                         key={plan.id}
                         type="button"
                         onClick={() => applyBasePlan(plan)}
-                        className={`flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-left ${
+                        className={
                           selectedPlanId === plan.id
-                            ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-500/20'
-                            : 'border-slate-200 bg-white'
-                        }`}
+                            ? 'flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-left border-rose-500 bg-rose-50 ring-2 ring-rose-500/20'
+                            : 'flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-left border-slate-200 bg-white'
+                        }
                       >
                         <div>
                           <div className="text-sm font-semibold text-slate-800">{plan.name}</div>
@@ -244,12 +243,12 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
                     {addons.map((addon) => {
                       const max = maxAddonCount(addon, selectedPlanId);
                       const qty = addonQty[addon.id] || 0;
+                      const boxClass =
+                        qty > 0
+                          ? 'rounded-xl border px-3.5 py-2.5 border-violet-400 bg-violet-50/80'
+                          : 'rounded-xl border px-3.5 py-2.5 border-slate-200';
                       return (
-                        <div
-                          key={addon.id}
-                          className={`rounded-xl border px-3.5 py-2.5 ${\n                            qty > 0 ? 'border-violet-400 bg-violet-50/80' : 'border-slate-200'
-                          }`}
-                        >
+                        <div key={addon.id} className={boxClass}>
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="text-sm font-semibold text-slate-800">{addon.name}</div>
@@ -335,7 +334,6 @@ export default function SubscriptionForm({ initial, onClose, onCreated, onUpdate
             </div>
           </div>
 
-          {/* Acciones fijas, z alto, sin nada encima */}
           <div className="relative z-20 shrink-0 border-t border-slate-100 bg-white px-5 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3">
             <div className="flex gap-2">
               <button

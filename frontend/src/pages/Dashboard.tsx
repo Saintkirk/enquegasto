@@ -6,7 +6,7 @@ import type { DashboardMetrics, Subscription } from '../types';
 import { formatPercent, formatDateCL } from '../utils/format';
 import { useIdleEffect } from '../hooks/useIdle';
 import { prefetchPlatforms } from '../utils/prefetch';
-import Charts from '../components/Charts';
+import LazyCharts from '../components/LazyCharts';
 import LoadingScreen from '../components/LoadingScreen';
 import PlatformLogo from '../components/PlatformLogo';
 import {
@@ -108,7 +108,6 @@ export default function Dashboard() {
 
   return (
     <div className="relative space-y-6 pb-24 sm:space-y-8 sm:pb-8">
-      {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="eqg-label mb-1">Resumen</p>
@@ -136,7 +135,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Sueldo liquido — hero card */}
       <div className="eqg-shell">
         <div className="eqg-shell-inner relative overflow-hidden p-5 sm:p-6">
           <div
@@ -198,9 +196,7 @@ export default function Dashboard() {
           {liquid != null && liquid > 0 && (
             <div className="relative mt-5">
               <div className="mb-1.5 flex items-center justify-between text-[11px]">
-                <span className="font-medium text-slate-500">
-                  {formatPercent(pct)} en suscripciones
-                </span>
+                <span className="font-medium text-slate-500">{formatPercent(pct)} en suscripciones</span>
                 <span className="tabular-nums text-slate-400">
                   {metrics?.totalMonthlyFormatted || '$0'} / mes
                 </span>
@@ -224,15 +220,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 3 metric tiles */}
       <div className="eqg-stagger grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {/* Total mensual */}
         <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-sky-400 via-sky-500 to-blue-600 p-[1px] shadow-[0_16px_40px_-12px_rgba(14,165,233,0.5)]">
           <div className="relative h-full overflow-hidden rounded-[calc(1.5rem-1px)] bg-gradient-to-br from-sky-400 via-sky-500 to-blue-600 p-4 text-white sm:p-5">
-            <div
-              className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10"
-              aria-hidden
-            />
+            <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10" aria-hidden />
             <div className="relative flex items-start justify-between">
               <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
                 <TrendingUp size={18} strokeWidth={2.25} />
@@ -242,22 +233,16 @@ export default function Dashboard() {
             <div className="relative mt-5 font-display text-2xl font-bold leading-none tracking-tight currency sm:text-[1.75rem]">
               {metrics?.totalMonthlyFormatted || '$0'}
             </div>
-            <p className="relative mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85">
-              Total mensual
-            </p>
+            <p className="relative mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85">Total mensual</p>
             <p className="relative mt-1 text-[11px] text-white/65">
               {activeCount} suscripcion{activeCount !== 1 ? 'es' : ''} activa{activeCount !== 1 ? 's' : ''}
             </p>
           </div>
         </div>
 
-        {/* Proyeccion anual */}
         <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-amber-300 via-amber-400 to-orange-400 p-[1px] shadow-[0_16px_40px_-12px_rgba(245,158,11,0.45)]">
           <div className="relative h-full overflow-hidden rounded-[calc(1.5rem-1px)] bg-gradient-to-br from-amber-300 via-amber-400 to-yellow-500 p-4 text-slate-900 sm:p-5">
-            <div
-              className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/25"
-              aria-hidden
-            />
+            <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/25" aria-hidden />
             <div className="relative flex items-start justify-between">
               <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/50">
                 <Calendar size={18} strokeWidth={2.25} />
@@ -266,34 +251,22 @@ export default function Dashboard() {
             <div className="relative mt-5 font-display text-2xl font-bold leading-none tracking-tight currency sm:text-[1.75rem]">
               {metrics?.totalYearlyFormatted || '$0'}
             </div>
-            <p className="relative mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-800/75">
-              Proyeccion anual
-            </p>
+            <p className="relative mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-800/75">Proyeccion anual</p>
             <p className="relative mt-1 text-[11px] text-slate-700/60">12 meses proyectados</p>
           </div>
         </div>
 
-        {/* De tu pega */}
         <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 p-[1px] shadow-[0_16px_40px_-12px_rgba(16,185,129,0.5)]">
           <div className="relative h-full overflow-hidden rounded-[calc(1.5rem-1px)] bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 p-4 text-white sm:p-5">
-            <div
-              className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10"
-              aria-hidden
-            />
+            <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10" aria-hidden />
             <div className="relative flex items-start justify-between">
               <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
                 <Clock size={18} strokeWidth={2.25} />
               </span>
             </div>
-            <div className="relative mt-5 font-display text-2xl font-bold leading-none tracking-tight sm:text-[1.75rem]">
-              {hoursLabel}
-            </div>
-            <p className="relative mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85">
-              De tu pega
-            </p>
-            <p className="relative mt-1 text-[11px] text-white/65">
-              Horas al mes para pagarlas
-            </p>
+            <div className="relative mt-5 font-display text-2xl font-bold leading-none tracking-tight sm:text-[1.75rem]">{hoursLabel}</div>
+            <p className="relative mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85">De tu pega</p>
+            <p className="relative mt-1 text-[11px] text-white/65">Horas al mes para pagarlas</p>
           </div>
         </div>
       </div>
@@ -318,9 +291,7 @@ export default function Dashboard() {
               <p className="text-sm font-semibold text-violet-950">
                 {metrics?.zombieCount} gasto{(metrics?.zombieCount ?? 0) !== 1 ? 's' : ''} zombie
               </p>
-              <p className="text-xs text-violet-600/90">
-                {metrics?.zombieMonthlyFormatted}/mes que casi no usas
-              </p>
+              <p className="text-xs text-violet-600/90">{metrics?.zombieMonthlyFormatted}/mes que casi no usas</p>
             </div>
           </div>
         </Link>
@@ -329,9 +300,7 @@ export default function Dashboard() {
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold tracking-tight text-slate-900">Mis Suscripciones</h2>
-          <Link to="/subscriptions" className="text-xs font-semibold text-rose-600 hover:text-rose-500">
-            Ver todas
-          </Link>
+          <Link to="/subscriptions" className="text-xs font-semibold text-rose-600 hover:text-rose-500">Ver todas</Link>
         </div>
 
         {previewSubs.length === 0 ? (
@@ -339,11 +308,7 @@ export default function Dashboard() {
             <div className="eqg-shell-inner border border-dashed border-slate-200/80 px-5 py-12 text-center">
               <p className="font-display text-base font-semibold text-slate-800">Aun no tienes suscripciones</p>
               <p className="mt-1.5 text-sm text-slate-500">Agrega Netflix, Spotify y lo que pagas al mes</p>
-              <button
-                type="button"
-                onClick={() => navigate('/subscriptions')}
-                className="eqg-press mt-5 inline-flex items-center gap-2 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md"
-              >
+              <button type="button" onClick={() => navigate('/subscriptions')} className="eqg-press mt-5 inline-flex items-center gap-2 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md">
                 <Plus size={16} /> Agregar la primera
               </button>
             </div>
@@ -378,22 +343,16 @@ export default function Dashboard() {
         <div className="eqg-shell">
           <div className="eqg-shell-inner p-5 sm:p-6">
             <p className="eqg-label mb-4">Analisis por categoria</p>
-            <Charts metrics={metrics} />
+            <LazyCharts metrics={metrics} />
           </div>
         </div>
       )}
 
       <div className="flex flex-wrap gap-3">
-        <Link
-          to="/subscriptions"
-          className="eqg-press inline-flex items-center gap-2 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_-8px_rgba(225,29,72,0.45)]"
-        >
+        <Link to="/subscriptions" className="eqg-press inline-flex items-center gap-2 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_-8px_rgba(225,29,72,0.45)]">
           <CreditCard size={16} /> Ver suscripciones
         </Link>
-        <Link
-          to="/zombies"
-          className="eqg-press inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm"
-        >
+        <Link to="/zombies" className="eqg-press inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm">
           <Ghost size={16} /> Revisar zombies
         </Link>
       </div>
@@ -422,13 +381,7 @@ function formatShortDate(iso: string): string {
 function MiniSpark() {
   return (
     <svg width="48" height="24" viewBox="0 0 48 24" fill="none" aria-hidden className="opacity-90">
-      <path
-        d="M1 16 L10 12 L17 14 L24 7 L32 11 L40 4 L47 9"
-        stroke="white"
-        strokeWidth="2.25"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M1 16 L10 12 L17 14 L24 7 L32 11 L40 4 L47 9" stroke="white" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

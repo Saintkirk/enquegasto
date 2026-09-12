@@ -11,81 +11,25 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="EnQuéGasto" />
-    <meta name="mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <title>EnQuéGasto — Controla tus suscripciones</title>
-    <!-- Parche: oculta footer de marca que tapaba Cancelar/Agregar (build viejo en CDN) -->
-    <style id="eqg-anti-footer">
+    <style>
       footer {
         display: none !important;
-        visibility: hidden !important;
         pointer-events: none !important;
-        height: 0 !important;
-        overflow: hidden !important;
-        opacity: 0 !important;
       }
     </style>
   </head>
   <body class="antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      (function () {
-        function killBrandFooter() {
-          try {
-            document.querySelectorAll('footer').forEach(function (el) {
-              el.style.setProperty('display', 'none', 'important');
-              el.style.setProperty('pointer-events', 'none', 'important');
-              el.setAttribute('aria-hidden', 'true');
-            });
-            var walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-            var node;
-            while ((node = walk.nextNode())) {
-              if (node.nodeValue && /EnQuéGasto\s*[·•|]\s*Chile/i.test(node.nodeValue)) {
-                var p = node.parentElement;
-                if (p && p.tagName !== 'SCRIPT' && p.tagName !== 'STYLE') {
-                  p.style.setProperty('display', 'none', 'important');
-                  p.style.setProperty('pointer-events', 'none', 'important');
-                }
-              }
-            }
-          } catch (e) {}
-        }
-        killBrandFooter();
-        setInterval(killBrandFooter, 800);
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', killBrandFooter);
-        }
-        window.addEventListener('load', killBrandFooter);
-      })();
-
-      if ('serviceWorker' in navigator) {
-        var boot = async function () {
-          try {
-            var regs = await navigator.serviceWorker.getRegistrations();
-            for (var i = 0; i < regs.length; i++) {
-              try {
-                regs[i].active && regs[i].active.postMessage('CLEAR_CACHES');
-                regs[i].active && regs[i].active.postMessage('SKIP_WAITING');
-                await regs[i].unregister();
-              } catch (e) {}
-            }
-            var keys = await caches.keys();
-            await Promise.all(keys.map(function (k) { return caches.delete(k); }));
-            await navigator.serviceWorker.register('/sw.js?v=5');
-          } catch (e) {}
-        };
-        if ('requestIdleCallback' in window) {
-          requestIdleCallback(function () { boot(); }, { timeout: 2000 });
-        } else {
-          window.addEventListener('load', function () { setTimeout(boot, 50); });
-        }
-      }
-    </script>
   </body>
 </html>

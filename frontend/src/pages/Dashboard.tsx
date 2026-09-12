@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import type { DashboardMetrics, Subscription } from '../types';
-import { formatPercent, formatCLP, formatDateCL } from '../utils/format';
+import { formatPercent, formatDateCL } from '../utils/format';
 import { useIdleEffect } from '../hooks/useIdle';
 import { prefetchPlatforms } from '../utils/prefetch';
 import Charts from '../components/Charts';
@@ -21,7 +21,6 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-/** Horas laborales mensuales típicas Chile (~45 h/sem) */
 const HOURS_PER_MONTH = 180;
 
 export default function Dashboard() {
@@ -37,10 +36,7 @@ export default function Dashboard() {
 
   const load = () => {
     setLoading(true);
-    Promise.all([
-      api.get('/subscriptions/metrics/dashboard'),
-      api.get('/subscriptions'),
-    ])
+    Promise.all([api.get('/subscriptions/metrics/dashboard'), api.get('/subscriptions')])
       .then(([m, s]) => {
         setMetrics(m.data.metrics);
         setSubs(s.data.subscriptions || []);
@@ -64,7 +60,7 @@ export default function Dashboard() {
   const saveSalary = async () => {
     const value = Number(salaryInput.replace(/\./g, '').replace(',', ''));
     if (!value || value < 150000) {
-      setError('Ingresa un sueldo líquido válido (mínimo $150.000)');
+      setError('Ingresa un sueldo liquido valido (minimo $150.000)');
       return;
     }
     setSavingSalary(true);
@@ -91,21 +87,31 @@ export default function Dashboard() {
     return Math.round(totalMonthly / hourly);
   }, [liquid, totalMonthly]);
 
+  const alertClass =
+    pct >= 15
+      ? 'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold border border-rose-200 bg-rose-50 text-rose-800'
+      : pct >= 8
+        ? 'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold border border-amber-200 bg-amber-50 text-amber-900'
+        : 'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold border border-emerald-200 bg-emerald-50 text-emerald-800';
+
+  const alertHint =
+    pct >= 15 ? ' — ojo, esta alto' : pct >= 8 ? '' : ' — bajo control';
+
   if (loading) return <LoadingScreen fullScreen={false} message="Armando tu resumen…" />;
 
   const firstName = user?.name?.split(' ')[0];
   const previewSubs = subs.slice(0, 5);
+  const hoursLabel = hoursOfWork > 0 ? hoursOfWork + ' h' : '—';
 
   return (
     <div className="relative space-y-6 pb-24 sm:space-y-8 sm:pb-8">
-      {/* Saludo */}
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Resumen</p>
           <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-            Hola{firstName ? `, ${firstName}` : ''}
+            Hola{firstName ? ', ' + firstName : ''}
           </h1>
-          <p className="mt-1 text-sm text-slate-500">Así se mueve tu plata en suscripciones</p>
+          <p className="mt-1 text-sm text-slate-500">Asi se mueve tu plata en suscripciones</p>
         </div>
         {user?.avatarUrl ? (
           <img
@@ -126,7 +132,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Sueldo editable */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -134,7 +139,7 @@ export default function Dashboard() {
               <Wallet size={16} strokeWidth={1.75} />
             </span>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-              Sueldo líquido
+              Sueldo liquido
             </span>
           </div>
           {!editingSalary && (
@@ -174,12 +179,11 @@ export default function Dashboard() {
             <div className="font-display text-xl font-semibold currency">
               {metrics?.liquidSalaryFormatted || '—'}
             </div>
-            <p className="mt-1 text-[11px] text-slate-400">Base para todos los cálculos</p>
+            <p className="mt-1 text-[11px] text-slate-400">Base para todos los calculos</p>
           </>
         )}
       </div>
 
-      {/* 3 tarjetas del mockup */}
       <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
         <div className="rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 p-3 text-white shadow-lg shadow-sky-500/25 sm:p-4">
           <div className="mb-2 flex items-center justify-between opacity-90">
@@ -198,39 +202,28 @@ export default function Dashboard() {
           <div className="font-display text-base font-bold leading-tight currency sm:text-xl">
             {metrics?.totalYearlyFormatted || '$0'}
           </div>
-          <p className="mt-1 text-[10px] font-medium opacity-80 sm:text-xs">Proyección Anual</p>
+          <p className="mt-1 text-[10px] font-medium opacity-80 sm:text-xs">Proyeccion Anual</p>
         </div>
 
         <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 p-3 text-white shadow-lg shadow-emerald-500/25 sm:p-4">
           <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-white/20">
             <Clock size={14} strokeWidth={2} />
           </div>
-          <div className="font-display text-base font-bold leading-tight sm:text-xl">
-            {hoursOfWork > 0 ? `${hoursOfWork} h` : '—'}
-          </div>
+          <div className="font-display text-base font-bold leading-tight sm:text-xl">{hoursLabel}</div>
           <p className="mt-1 text-[10px] font-medium opacity-90 sm:text-xs">De tu pega</p>
         </div>
       </div>
 
-      {/* Alerta % del sueldo */}
       {liquid != null && totalMonthly > 0 && (
-        <div
-          className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold ${\n            pct >= 15
-              ? 'border border-rose-200 bg-rose-50 text-rose-800'
-              : pct >= 8
-                ? 'border border-amber-200 bg-amber-50 text-amber-900'
-                : 'border border-emerald-200 bg-emerald-50 text-emerald-800'
-          }`}
-        >
+        <div className={alertClass}>
           <AlertTriangle size={18} className="shrink-0" />
           <span>
             {formatPercent(pct)} de tu sueldo en suscripciones
-            {pct >= 15 ? ' — ojo, está alto' : pct >= 8 ? '' : ' — bajo control'}
+            {alertHint}
           </span>
         </div>
       )}
 
-      {/* Gasto zombie resumen */}
       {(metrics?.zombieCount ?? 0) > 0 && (
         <Link
           to="/zombies"
@@ -241,7 +234,7 @@ export default function Dashboard() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-violet-900">
-              {metrics?.zombieCount} gasto{metrics!.zombieCount !== 1 ? 's' : ''} zombie
+              {metrics?.zombieCount} gasto{(metrics?.zombieCount ?? 0) !== 1 ? 's' : ''} zombie
             </p>
             <p className="text-xs text-violet-600">
               {metrics?.zombieMonthlyFormatted}/mes que casi no usas
@@ -250,7 +243,6 @@ export default function Dashboard() {
         </Link>
       )}
 
-      {/* Mis Suscripciones (preview como mockup) */}
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold text-slate-900">Mis Suscripciones</h2>
@@ -261,7 +253,7 @@ export default function Dashboard() {
 
         {previewSubs.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-white/60 px-5 py-10 text-center">
-            <p className="font-display text-base font-semibold text-slate-800">Aún no tienes suscripciones</p>
+            <p className="font-display text-base font-semibold text-slate-800">Aun no tienes suscripciones</p>
             <p className="mt-1 text-sm text-slate-500">Agrega Netflix, Spotify y lo que pagas al mes</p>
             <button
               type="button"
@@ -280,7 +272,7 @@ export default function Dashboard() {
                   <p className="truncate text-sm font-semibold text-slate-900">{sub.name}</p>
                   <p className="text-xs text-slate-400">
                     {sub.nextBillingDate
-                      ? `Renueva: ${formatShortDate(sub.nextBillingDate)}`
+                      ? 'Renueva: ' + formatShortDate(sub.nextBillingDate)
                       : sub.billingCycle?.toLowerCase() === 'yearly'
                         ? 'Anual'
                         : 'Mensual'}
@@ -295,11 +287,10 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Gráficos si hay data */}
       {metrics && metrics.byCategory?.length > 0 && (
         <div className="rounded-[1.5rem] border border-slate-200/80 bg-white p-5 sm:p-6">
           <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-            Análisis por categoría
+            Analisis por categoria
           </p>
           <Charts metrics={metrics} />
         </div>
@@ -320,12 +311,11 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* FAB + como el mockup */}
       <button
         type="button"
         onClick={() => navigate('/subscriptions')}
         className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-sky-500 text-white shadow-lg shadow-sky-500/40 active:scale-95 sm:hidden"
-        aria-label="Agregar suscripción"
+        aria-label="Agregar suscripcion"
       >
         <Plus size={28} strokeWidth={2.5} />
       </button>
@@ -342,7 +332,6 @@ function formatShortDate(iso: string): string {
   }
 }
 
-/** Mini sparkline decorativo (Total Mensual) */
 function MiniSpark() {
   return (
     <svg width="40" height="20" viewBox="0 0 40 20" fill="none" aria-hidden className="opacity-90">

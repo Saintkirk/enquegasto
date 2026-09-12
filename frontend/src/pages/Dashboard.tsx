@@ -1,39 +1,65 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
-import type { DashboardMetrics } from '../types';
-import { formatPercent } from '../utils/format';
+import type { DashboardMetrics, Subscription } from '../types';
+import { formatPercent, formatCLP, formatDateCL } from '../utils/format';
 import { useIdleEffect } from '../hooks/useIdle';
 import { prefetchPlatforms } from '../utils/prefetch';
 import Charts from '../components/Charts';
 import LoadingScreen from '../components/LoadingScreen';
-import { CreditCard, Ghost, TrendingUp, Wallet, Pencil, Check } from 'lucide-react';
+import PlatformLogo from '../components/PlatformLogo';
+import {
+  CreditCard,
+  Ghost,
+  Wallet,
+  Pencil,
+  Check,
+  Plus,
+  Calendar,
+  Clock,
+  AlertTriangle,
+} from 'lucide-react';
+
+/** Horas laborales mensuales típicas Chile (~45 h/sem) */
+const HOURS_PER_MONTH = 180;
 
 export default function Dashboard() {
   const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [subs, setSubs] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingSalary, setEditingSalary] = useState(false);
   const [salaryInput, setSalaryInput] = useState('');
   const [savingSalary, setSavingSalary] = useState(false);
 
-  const loadMetrics = () => {
-    api
-      .get('/subscriptions/metrics/dashboard')
-      .then((res) => setMetrics(res.data.metrics))
-      .catch(() => setError('No pudimos cargar tus métricas'))
+  const load = () => {
+    setLoading(true);
+    Promise.all([
+      api.get('/subscriptions/metrics/dashboard'),
+      api.get('/subscriptions'),
+    ])
+      .then(([m, s]) => {
+        setMetrics(m.data.metrics);
+        setSubs(s.data.subscriptions || []);
+      })
+      .catch(() => setError('No pudimos cargar tu resumen'))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    loadMetrics();
+    load();
   }, []);
 
-  useIdleEffect(() => {
-    void prefetchPlatforms();
-  }, [], { enabled: !loading, timeout: 3000 });
+  useIdleEffect(
+    () => {
+      void prefetchPlatforms();
+    },
+    [],
+    { enabled: !loading, timeout: 3000 }
+  );
 
   const saveSalary = async () => {
     const value = Number(salaryInput.replace(/\./g, '').replace(',', ''));
@@ -47,7 +73,7 @@ export default function Dashboard() {
       await api.patch('/subscriptions/salary', { liquidSalary: value });
       await refreshUser();
       setEditingSalary(false);
-      loadMetrics();
+      load();
     } catch {
       setError('No pudimos actualizar el sueldo');
     } finally {
@@ -55,92 +81,278 @@ export default function Dashboard() {
     }
   };
 
+  const pct = metrics?.percentOfSalary ?? metrics?.percentageOfSalary ?? 0;
+  const totalMonthly = metrics?.totalMonthly ?? 0;
+  const liquid = metrics?.liquidSalary ?? user?.liquidSalary ?? null;
+
+  const hoursOfWork = useMemo(() => {
+    if (!liquid || liquid <= 0 || totalMonthly <= 0) return 0;
+    const hourly = liquid / HOURS_PER_MONTH;
+    return Math.round(totalMonthly / hourly);
+  }, [liquid, totalMonthly]);
+
   if (loading) return <LoadingScreen fullScreen={false} message="Armando tu resumen…" />;
 
   const firstName = user?.name?.split(' ')[0];
-  const pct = metrics?.percentOfSalary ?? metrics?.percentageOfSalary ?? 0;
+  const previewSubs = subs.slice(0, 5);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Resumen</p>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-          Hola{firstName ? `, ${firstName}` : ''}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">Así se mueve tu plata en suscripciones</p>
+    <div className="relative space-y-6 pb-24 sm:space-y-8 sm:pb-8">
+      {/* Saludo */}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Resumen</p>
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            Hola{firstName ? `, ${firstName}` : ''}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">Así se mueve tu plata en suscripciones</p>
+        </div>
+        {user?.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt=""
+            className="h-11 w-11 rounded-full border-2 border-white object-cover shadow-md"
+          />
+        ) : (
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-600 text-sm font-bold text-white shadow-md">
+            {(firstName || user?.email || '?')[0].toUpperCase()}
+          </div>
+        )}
       </div>
 
-      {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+      {error && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100"><Wallet size={16} strokeWidth={1.75} /></span>
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Sueldo líquido</span>
-            </div>
-            {!editingSalary && (
-              <button onClick={() => { setSalaryInput(String(user?.liquidSalary || '')); setEditingSalary(true); }} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-50">
-                <Pencil size={14} />
-              </button>
-            )}
+      {/* Sueldo editable */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100">
+              <Wallet size={16} strokeWidth={1.75} />
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              Sueldo líquido
+            </span>
           </div>
-          {editingSalary ? (
-            <div className="flex gap-2">
-              <input value={salaryInput} onChange={(e) => setSalaryInput(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" autoFocus />
-              <button onClick={saveSalary} disabled={savingSalary} className="rounded-xl bg-rose-600 px-3 text-white"><Check size={16} /></button>
-            </div>
-          ) : (
-            <>
-              <div className="font-display text-xl font-semibold currency">{metrics?.liquidSalaryFormatted || '—'}</div>
-              <p className="mt-1 text-[11px] text-slate-400">Base para todos los cálculos</p>
-            </>
+          {!editingSalary && (
+            <button
+              type="button"
+              onClick={() => {
+                setSalaryInput(String(user?.liquidSalary || ''));
+                setEditingSalary(true);
+              }}
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-50"
+              aria-label="Editar sueldo"
+            >
+              <Pencil size={14} />
+            </button>
           )}
         </div>
-
-        <MetricCard icon={<TrendingUp size={16} />} label="Gasto mensual" value={metrics?.totalMonthlyFormatted || '$0'} sub={`${metrics?.activeCount ?? 0} activas`} />
-        <MetricCard icon={<span className="text-xs font-bold">%</span>} label="% del sueldo" value={formatPercent(pct)} sub="vs sueldo líquido" />
-
-        <div className="rounded-[1.25rem] border border-violet-950/5 bg-violet-950/[0.04] p-1">
-          <div className="rounded-[calc(1.25rem-0.25rem)] border border-violet-200/60 bg-violet-50/80 p-3.5">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100 text-violet-600"><Ghost size={16} /></span>
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-violet-500">Gasto zombie</span>
-            </div>
-            <div className="font-display text-xl font-semibold text-violet-900 currency">{metrics?.zombieMonthlyFormatted || '$0'}</div>
-            <p className="mt-1 text-[11px] text-violet-500/80">{metrics?.zombieCount ? `${metrics.zombieCount} que casi no usas` : 'Sin zombies por ahora'}</p>
+        {editingSalary ? (
+          <div className="flex gap-2">
+            <input
+              value={salaryInput}
+              onChange={(e) => setSalaryInput(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              inputMode="numeric"
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={saveSalary}
+              disabled={savingSalary}
+              className="rounded-xl bg-rose-600 px-3 text-white"
+            >
+              <Check size={16} />
+            </button>
           </div>
+        ) : (
+          <>
+            <div className="font-display text-xl font-semibold currency">
+              {metrics?.liquidSalaryFormatted || '—'}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">Base para todos los cálculos</p>
+          </>
+        )}
+      </div>
+
+      {/* 3 tarjetas del mockup */}
+      <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+        <div className="rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 p-3 text-white shadow-lg shadow-sky-500/25 sm:p-4">
+          <div className="mb-2 flex items-center justify-between opacity-90">
+            <MiniSpark />
+          </div>
+          <div className="font-display text-base font-bold leading-tight currency sm:text-xl">
+            {metrics?.totalMonthlyFormatted || '$0'}
+          </div>
+          <p className="mt-1 text-[10px] font-medium opacity-90 sm:text-xs">Total Mensual</p>
+        </div>
+
+        <div className="rounded-2xl bg-gradient-to-br from-amber-400 to-yellow-500 p-3 text-slate-900 shadow-lg shadow-amber-400/30 sm:p-4">
+          <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-white/40">
+            <Calendar size={14} strokeWidth={2} />
+          </div>
+          <div className="font-display text-base font-bold leading-tight currency sm:text-xl">
+            {metrics?.totalYearlyFormatted || '$0'}
+          </div>
+          <p className="mt-1 text-[10px] font-medium opacity-80 sm:text-xs">Proyección Anual</p>
+        </div>
+
+        <div className="rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 p-3 text-white shadow-lg shadow-emerald-500/25 sm:p-4">
+          <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-white/20">
+            <Clock size={14} strokeWidth={2} />
+          </div>
+          <div className="font-display text-base font-bold leading-tight sm:text-xl">
+            {hoursOfWork > 0 ? `${hoursOfWork} h` : '—'}
+          </div>
+          <p className="mt-1 text-[10px] font-medium opacity-90 sm:text-xs">De tu pega</p>
         </div>
       </div>
 
+      {/* Alerta % del sueldo */}
+      {liquid != null && totalMonthly > 0 && (
+        <div
+          className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold ${\n            pct >= 15
+              ? 'border border-rose-200 bg-rose-50 text-rose-800'
+              : pct >= 8
+                ? 'border border-amber-200 bg-amber-50 text-amber-900'
+                : 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+          }`}
+        >
+          <AlertTriangle size={18} className="shrink-0" />
+          <span>
+            {formatPercent(pct)} de tu sueldo en suscripciones
+            {pct >= 15 ? ' — ojo, está alto' : pct >= 8 ? '' : ' — bajo control'}
+          </span>
+        </div>
+      )}
+
+      {/* Gasto zombie resumen */}
+      {(metrics?.zombieCount ?? 0) > 0 && (
+        <Link
+          to="/zombies"
+          className="flex items-center gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 transition hover:bg-violet-100/80"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+            <Ghost size={18} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-violet-900">
+              {metrics?.zombieCount} gasto{metrics!.zombieCount !== 1 ? 's' : ''} zombie
+            </p>
+            <p className="text-xs text-violet-600">
+              {metrics?.zombieMonthlyFormatted}/mes que casi no usas
+            </p>
+          </div>
+        </Link>
+      )}
+
+      {/* Mis Suscripciones (preview como mockup) */}
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display text-lg font-semibold text-slate-900">Mis Suscripciones</h2>
+          <Link to="/subscriptions" className="text-xs font-semibold text-rose-600 hover:text-rose-500">
+            Ver todas
+          </Link>
+        </div>
+
+        {previewSubs.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white/60 px-5 py-10 text-center">
+            <p className="font-display text-base font-semibold text-slate-800">Aún no tienes suscripciones</p>
+            <p className="mt-1 text-sm text-slate-500">Agrega Netflix, Spotify y lo que pagas al mes</p>
+            <button
+              type="button"
+              onClick={() => navigate('/subscriptions')}
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white"
+            >
+              <Plus size={16} /> Agregar la primera
+            </button>
+          </div>
+        ) : (
+          <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+            {previewSubs.map((sub) => (
+              <li key={sub.id} className="flex items-center gap-3 px-4 py-3.5">
+                <PlatformLogo platform={sub.platform} size={40} priority />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-900">{sub.name}</p>
+                  <p className="text-xs text-slate-400">
+                    {sub.nextBillingDate
+                      ? `Renueva: ${formatShortDate(sub.nextBillingDate)}`
+                      : sub.billingCycle?.toLowerCase() === 'yearly'
+                        ? 'Anual'
+                        : 'Mensual'}
+                  </p>
+                </div>
+                <div className="currency shrink-0 text-sm font-semibold text-slate-900">
+                  {sub.monthlyEquivalentFormatted || sub.amountFormatted}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Gráficos si hay data */}
       {metrics && metrics.byCategory?.length > 0 && (
         <div className="rounded-[1.5rem] border border-slate-200/80 bg-white p-5 sm:p-6">
-          <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Análisis</p>
+          <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+            Análisis por categoría
+          </p>
           <Charts metrics={metrics} />
         </div>
       )}
 
       <div className="flex flex-wrap gap-3">
-        <Link to="/subscriptions" className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_-8px_rgba(225,29,72,0.45)] hover:bg-rose-500">
+        <Link
+          to="/subscriptions"
+          className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_-8px_rgba(225,29,72,0.45)]"
+        >
           <CreditCard size={16} /> Ver suscripciones
         </Link>
-        <Link to="/zombies" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+        <Link
+          to="/zombies"
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700"
+        >
           <Ghost size={16} /> Revisar zombies
         </Link>
       </div>
+
+      {/* FAB + como el mockup */}
+      <button
+        type="button"
+        onClick={() => navigate('/subscriptions')}
+        className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-sky-500 text-white shadow-lg shadow-sky-500/40 active:scale-95 sm:hidden"
+        aria-label="Agregar suscripción"
+      >
+        <Plus size={28} strokeWidth={2.5} />
+      </button>
     </div>
   );
 }
 
-function MetricCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
+function formatShortDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return new Intl.DateTimeFormat('es-CL', { day: '2-digit', month: '2-digit' }).format(d);
+  } catch {
+    return formatDateCL(iso);
+  }
+}
+
+/** Mini sparkline decorativo (Total Mensual) */
+function MiniSpark() {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600">{icon}</span>
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</span>
-      </div>
-      <div className="font-display text-xl font-semibold currency">{value}</div>
-      {sub && <p className="mt-1 text-[11px] text-slate-400">{sub}</p>}
-    </div>
+    <svg width="40" height="20" viewBox="0 0 40 20" fill="none" aria-hidden className="opacity-90">
+      <path
+        d="M1 14 L8 10 L14 12 L20 6 L26 9 L32 4 L39 7"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

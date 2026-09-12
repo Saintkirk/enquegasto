@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd frontend && npm install --legacy-peer-deps --no-audit --no-fund --include=dev",
+  "installCommand": "cd frontend && npm install --legacy-peer-deps --no-audit --no-fund --include=dev && node node_modules/esbuild/install.js",
   "buildCommand": "cd frontend && npx vite build",
   "outputDirectory": "frontend/dist",
   "framework": null,

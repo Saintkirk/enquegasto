@@ -1,27 +1,14 @@
 import { useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 
 /**
- * Transicion de pagina ligera (solo opacity + translateY).
- * Se remonta con key=pathname para re-disparar la animacion CSS.
+ * Transicion de pagina: solo CSS + key=pathname.
+ * Sin double-rAF ni estado extra (menos re-renders).
  */
 export default function PageTransition({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    setVisible(false);
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setVisible(true));
-    });
-    return () => cancelAnimationFrame(id);
-  }, [location.pathname]);
+  const { pathname } = useLocation();
 
   return (
-    <div
-      key={location.pathname}
-      className={visible ? 'eqg-page eqg-page-in' : 'eqg-page'}
-    >
+    <div key={pathname} className="eqg-page eqg-page-in">
       {children}
     </div>
   );

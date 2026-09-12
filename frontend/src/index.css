@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 /*
- * EnQuéGasto design tokens — taste-skill / soft + redesign
- * Vibe: fintech chilena calm + confident (no purple AI slop)
+ * EnQuéGasto design tokens — taste-skill
+ * Animaciones: solo transform + opacity (capa compositor)
  */
 :root {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -22,8 +22,8 @@
   --eqg-canvas: #f7f6f4;
   --eqg-ease: cubic-bezier(0.32, 0.72, 0, 1);
   --eqg-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --eqg-duration: 220ms;
-  --eqg-page-duration: 320ms;
+  --eqg-duration: 200ms;
+  --eqg-page-duration: 280ms;
   --eqg-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px -4px rgba(15, 23, 42, 0.06);
   --eqg-shadow-md: 0 8px 30px -12px rgba(15, 23, 42, 0.12);
   --eqg-shadow-lg: 0 20px 50px -24px rgba(15, 23, 42, 0.18);
@@ -60,13 +60,14 @@ body {
   font-feature-settings: 'tnum' 1;
 }
 
+/* Grain fixed — no repaint en scroll */
 .eqg-grain {
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 180px;
   mix-blend-mode: multiply;
-  contain: paint;
+  contain: strict;
   opacity: 0.028;
 }
 
@@ -100,6 +101,7 @@ body {
   color: #94a3b8;
 }
 
+/* Transiciones UI: sin layout thrashing */
 .eqg-transition {
   transition-property: transform, opacity, background-color, color, border-color, box-shadow;
   transition-duration: var(--eqg-duration);
@@ -107,13 +109,14 @@ body {
 }
 
 .eqg-press:active {
-  transform: scale(0.98);
+  transform: translate3d(0, 0, 0) scale(0.98);
 }
 
-/* —— Page transitions —— */
+/* —— Page enter (GPU) —— */
 .eqg-page {
-  opacity: 0;
-  transform: translateY(10px);
+  /* estado final por defecto si no hay animacion */
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
 }
 
 .eqg-page-in {
@@ -123,72 +126,62 @@ body {
 @keyframes eqg-page-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translate3d(0, 8px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
-/* Stagger children (metric cards, list rows) */
+/* Stagger: max 3 delays (metric cards) — sin will-change permanente */
 .eqg-stagger > * {
-  opacity: 0;
-  animation: eqg-fade-up 0.4s var(--eqg-ease-out) both;
+  animation: eqg-fade-up 0.36s var(--eqg-ease-out) both;
 }
 
 .eqg-stagger > *:nth-child(1) {
-  animation-delay: 40ms;
+  animation-delay: 30ms;
 }
 .eqg-stagger > *:nth-child(2) {
-  animation-delay: 90ms;
+  animation-delay: 70ms;
 }
 .eqg-stagger > *:nth-child(3) {
-  animation-delay: 140ms;
-}
-.eqg-stagger > *:nth-child(4) {
-  animation-delay: 190ms;
-}
-.eqg-stagger > *:nth-child(5) {
-  animation-delay: 240ms;
-}
-.eqg-stagger > *:nth-child(6) {
-  animation-delay: 290ms;
+  animation-delay: 110ms;
 }
 
 @keyframes eqg-fade-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translate3d(0, 6px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .eqg-enter {
-  animation: eqg-fade-up 0.45s var(--eqg-ease-out) both;
+  animation: eqg-fade-up 0.4s var(--eqg-ease-out) both;
 }
 
-/* Modal / bottom sheet entrance */
+/* Modal sheet */
 .eqg-sheet-in {
-  animation: eqg-sheet-in 0.38s var(--eqg-ease) both;
+  animation: eqg-sheet-in 0.32s var(--eqg-ease) both;
 }
 
 @keyframes eqg-sheet-in {
   from {
-    opacity: 0.6;
-    transform: translateY(18%);
+    opacity: 0.85;
+    transform: translate3d(0, 12%, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .eqg-backdrop-in {
-  animation: eqg-backdrop-in 0.28s var(--eqg-ease-out) both;
+  animation: eqg-backdrop-in 0.22s var(--eqg-ease-out) both;
 }
 
 @keyframes eqg-backdrop-in {
@@ -200,15 +193,16 @@ body {
   }
 }
 
+/* Loading indicators: will-change solo aqui (animacion continua) */
 @keyframes eqg-pulse {
   0%,
   100% {
     opacity: 0;
-    transform: scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    opacity: 0.32;
-    transform: scale(1.06);
+    opacity: 0.3;
+    transform: translate3d(0, 0, 0) scale(1.05);
   }
 }
 .eqg-pulse {
@@ -218,13 +212,13 @@ body {
 
 @keyframes eqg-progress {
   0% {
-    transform: translateX(-100%) scaleX(0.4);
+    transform: translate3d(-100%, 0, 0) scaleX(0.4);
   }
   50% {
-    transform: translateX(40%) scaleX(0.65);
+    transform: translate3d(40%, 0, 0) scaleX(0.65);
   }
   100% {
-    transform: translateX(250%) scaleX(0.4);
+    transform: translate3d(250%, 0, 0) scaleX(0.4);
   }
 }
 .eqg-progress {
@@ -246,6 +240,7 @@ button {
   font: inherit;
 }
 
+/* Menos trabajo en pantallas que no necesitan motion fino */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --eqg-duration: 0.01ms;
@@ -261,9 +256,24 @@ button {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
-    will-change: auto;
+    will-change: auto !important;
   }
   .eqg-progress {
     width: 70%;
+  }
+  .eqg-press:active {
+    transform: none;
+  }
+}
+
+/* Ahorro en dispositivos low-end / data-saver (si el browser lo expone) */
+@media (prefers-reduced-data: reduce) {
+  .eqg-grain {
+    display: none;
+  }
+  .eqg-page-in,
+  .eqg-stagger > *,
+  .eqg-enter {
+    animation-duration: 0.01ms !important;
   }
 }

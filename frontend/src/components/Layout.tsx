@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import InstallPrompt from './InstallPrompt';
+import PageTransition from './PageTransition';
 import { LogOut, LayoutDashboard, CreditCard, Ghost } from 'lucide-react';
 
 export default function Layout() {
@@ -62,9 +63,9 @@ export default function Layout() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 py-5 pb-24 sm:py-8 sm:pb-8">
-        <div className="eqg-enter">
+        <PageTransition>
           <Outlet />
-        </div>
+        </PageTransition>
       </main>
 
       <InstallPrompt />

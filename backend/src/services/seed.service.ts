@@ -14,23 +14,16 @@ function logoFromWebsite(websiteUrl?: string | null): string | null {
 
 const ALL = [...PLATFORMS, ...EXTRA_PLATFORMS];
 
-/** Completa catálogo (TNT, HBO, etc.). Idempotente por slug. */
+/**
+ * Sincroniza catálogo completo por slug (upsert).
+ * Seguro en produccion: no borra suscripciones de usuarios.
+ * Se ejecuta siempre al arrancar para cubrir plataformas nuevas.
+ */
 export async function ensurePlatformsSeeded(): Promise<{ seeded: boolean; total: number }> {
-  const count = await prisma.platform.count();
-  const mustHave = ['tnt-sports', 'hbo-max', 'dazn'];
-  const missing: string[] = [];
-  for (const slug of mustHave) {
-    if (!(await prisma.platform.findUnique({ where: { slug } }))) missing.push(slug);
-  }
+  const before = await prisma.platform.count();
+  console.log(`🌱 Sync catálogo (${before} en BD → ${ALL.length} en seed)…`);
 
-  if (count >= ALL.length && missing.length === 0) {
-    return { seeded: false, total: count };
-  }
-
-  console.log(
-    `🌱 Actualizando catálogo (${count}/${ALL.length}${missing.length ? `, faltan ${missing.join(', ')}` : ''})…`
-  );
-
+  let upserts = 0;
   for (const p of ALL) {
     const logo = p.logoUrl || logoFromWebsite(p.websiteUrl);
     await prisma.platform.upsert({
@@ -59,9 +52,10 @@ export async function ensurePlatformsSeeded(): Promise<{ seeded: boolean; total:
         isActive: true,
       },
     });
+    upserts += 1;
   }
 
   const total = await prisma.platform.count({ where: { isActive: true } });
-  console.log(`✅ Catálogo listo: ${total} plataformas`);
+  console.log(`✅ Catálogo listo: ${total} activas (${upserts} upserts)`);
   return { seeded: true, total };
 }

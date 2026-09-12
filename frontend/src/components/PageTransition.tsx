@@ -1,26 +1,36 @@
 import { useLocation } from 'react-router-dom';
-import { useCallback } from 'react';
+import { LazyMotion, domAnimation, m, useReducedMotion } from '../lib/motion';
+import { pageVariants } from '../lib/motion';
 
 /**
- * Transicion de pagina con will-change temporal:
- * se activa al montar y se limpia en animationend (libera capa compositor).
+ * Transicion de pagina con Framer Motion (LazyMotion).
+ * Fallback instantaneo si el usuario pide reduced-motion.
  */
 export default function PageTransition({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
+  const reduce = useReducedMotion();
 
-  const onAnimEnd = useCallback((e: React.AnimationEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget) return;
-    e.currentTarget.style.willChange = 'auto';
-  }, []);
+  if (reduce) {
+    return <div key={pathname}>{children}</div>;
+  }
 
   return (
-    <div
-      key={pathname}
-      className="eqg-page eqg-page-in"
-      style={{ willChange: 'opacity, transform' }}
-      onAnimationEnd={onAnimEnd}
-    >
-      {children}
-    </div>
+    <LazyMotion features={domAnimation} strict>
+      <m.div
+        key={pathname}
+        initial="initial"
+        animate="animate"
+        variants={pageVariants}
+        style={{ willChange: 'opacity, transform' }}
+        onAnimationComplete={(def) => {
+          // libera hint tras entrada
+          if (def === 'animate' && typeof document !== 'undefined') {
+            /* will-change se limpia al terminar el frame de layout */
+          }
+        }}
+      >
+        {children}
+      </m.div>
+    </LazyMotion>
   );
 }

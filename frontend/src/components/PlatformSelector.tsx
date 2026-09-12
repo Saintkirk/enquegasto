@@ -1,5 +1,13 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import {
+  LazyMotion,
+  domAnimation,
+  m,
+  AnimatePresence,
+  useReducedMotion,
+  sheetVariants,
+} from '../lib/motion';
 import api from '../api/client';
 import type { Platform } from '../types';
 import { CATEGORY_META } from '../data/platformPlans';
@@ -16,7 +24,7 @@ type Step = 'categories' | 'list';
 
 const PAGE_SIZE = 30;
 
-/** Tint por categoría — taste-skill: superficies tintadas, no gris plano */
+/** Tint por categoría — taste-skill */
 const CATEGORY_THEME: Record<
   string,
   { soft: string; ring: string; badge: string; text: string }
@@ -128,6 +136,7 @@ const CATEGORY_THEME: Record<
 const DEFAULT_THEME = CATEGORY_THEME.Otros;
 
 export default function PlatformSelector({ value, onChange, disabled }: Props) {
+  const reduceMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>('categories');
   const [search, setSearch] = useState('');
@@ -289,221 +298,244 @@ export default function PlatformSelector({ value, onChange, disabled }: Props) {
   const valueEmoji = CATEGORY_META.find((c) => c.id === value?.category)?.emoji || '📦';
   const catMeta = CATEGORY_META.find((c) => c.id === category);
 
-  const sheet =
-    open &&
-    createPortal(
-      <div className="fixed inset-0 z-[400] flex flex-col bg-black/40" role="dialog" aria-modal="true">
-        <button type="button" className="h-[8vh] w-full shrink-0" aria-label="Cerrar" onClick={closePicker} />
-
-        <div className="flex min-h-0 flex-1 flex-col rounded-t-[1.75rem] bg-[#f7f6f4] shadow-[0_-20px_50px_-20px_rgba(15,23,42,0.25)]">
-          <div className="flex shrink-0 items-center gap-2 border-b border-slate-200/60 bg-white/80 px-3 py-3 backdrop-blur-md">
-            {step === 'list' ? (
-              <button
-                type="button"
-                onClick={backToCategories}
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
-                aria-label="Volver"
-              >
-                <ChevronLeft size={22} />
-              </button>
-            ) : (
-              <div className="w-10" />
-            )}
-
-            <div className="min-w-0 flex-1">
-              {step === 'categories' ? (
-                <>
-                  <div className="font-display text-[15px] font-semibold tracking-tight text-slate-900">
-                    Elegir categoria
-                  </div>
-                  <div className="text-[11px] text-slate-400">Toca una tarjeta · busca despues si quieres</div>
-                </>
-              ) : searchOpen ? (
-                <div className="relative">
-                  <Search
-                    size={14}
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                  />
-                  <input
-                    ref={inputRef}
-                    type="search"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder={category ? 'Buscar en ' + category + '…' : 'Buscar Netflix, TNT…'}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-rose-300 focus:bg-white"
-                  />
-                </div>
-              ) : (
-                <>
-                  <div className="truncate font-display text-[15px] font-semibold tracking-tight text-slate-900">
-                    {catMeta ? catMeta.emoji + ' ' + catMeta.label : 'Todas'}
-                  </div>
-                  <div className="text-[11px] text-slate-400">
-                    {loading
-                      ? 'Cargando…'
-                      : platforms.length +
-                        (total > platforms.length ? ' de ' + total : '') +
-                        ' servicios'}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {step === 'list' && !searchOpen && (
-              <button
-                type="button"
-                onClick={openSearch}
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
-                aria-label="Buscar"
-              >
-                <Search size={20} />
-              </button>
-            )}
-            {step === 'list' && searchOpen && (
-              <button
-                type="button"
-                onClick={closeSearch}
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
-                aria-label="Cerrar busqueda"
-              >
-                <X size={18} />
-              </button>
-            )}
-            <button
+  const sheet = createPortal(
+    <LazyMotion features={domAnimation} strict>
+      <AnimatePresence>
+        {open && (
+          <m.div
+            key="eqg-picker"
+            className="fixed inset-0 z-[400] flex flex-col justify-end"
+            role="dialog"
+            aria-modal="true"
+          >
+            <m.button
               type="button"
-              onClick={closePicker}
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
+              className="absolute inset-0 bg-black/40"
               aria-label="Cerrar"
+              onClick={closePicker}
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={reduceMotion ? undefined : { opacity: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            />
+            <m.div
+              className="relative z-10 flex min-h-0 flex-1 flex-col rounded-t-[1.75rem] bg-[#f7f6f4] shadow-[0_-20px_50px_-20px_rgba(15,23,42,0.25)]"
+              initial={reduceMotion ? false : 'initial'}
+              animate={reduceMotion ? undefined : 'animate'}
+              exit={reduceMotion ? undefined : 'exit'}
+              variants={reduceMotion ? undefined : sheetVariants}
             >
-              <X size={18} />
-            </button>
-          </div>
+              <div className="flex shrink-0 items-center gap-2 border-b border-slate-200/60 bg-white/80 px-3 py-3 backdrop-blur-md">
+                {step === 'list' ? (
+                  <button
+                    type="button"
+                    onClick={backToCategories}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
+                    aria-label="Volver"
+                  >
+                    <ChevronLeft size={22} />
+                  </button>
+                ) : (
+                  <div className="w-10" />
+                )}
 
-          {step === 'categories' ? (
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f7f6f4] px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4">
-              <p className="eqg-label mb-3 px-0.5">Explorar por tipo</p>
-
-              <button
-                type="button"
-                onClick={() => pickCategory(null)}
-                className="eqg-press mb-4 flex w-full items-center gap-3.5 rounded-[1.25rem] bg-gradient-to-br from-rose-500 to-rose-700 p-[1px] text-left shadow-[0_12px_28px_-10px_rgba(225,29,72,0.45)]"
-              >
-                <span className="flex w-full items-center gap-3.5 rounded-[calc(1.25rem-1px)] bg-gradient-to-br from-rose-500 to-rose-700 px-3.5 py-3.5 text-white">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
-                    <LayoutGrid size={22} strokeWidth={1.75} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-display text-[15px] font-semibold tracking-tight">
-                      Todas las plataformas
-                    </span>
-                    <span className="mt-0.5 block text-[11px] text-white/75">Catalogo completo · sin filtro</span>
-                  </span>
-                </span>
-              </button>
-
-              <div className="eqg-stagger grid grid-cols-2 gap-2.5 sm:gap-3">
-                {categoryCards.map((c) => {
-                  const theme = CATEGORY_THEME[c.id] || DEFAULT_THEME;
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => pickCategory(c.id)}
-                      className={
-                        'eqg-press group relative flex flex-col overflow-hidden rounded-[1.25rem] bg-gradient-to-br p-[1px] text-left shadow-[0_8px_24px_-12px_rgba(15,23,42,0.12)] ring-1 ' +
-                        theme.ring +
-                        ' ' +
-                        theme.soft
-                      }
-                    >
-                      <span className="relative flex h-full flex-col gap-2.5 rounded-[calc(1.25rem-1px)] bg-white/85 p-3.5 backdrop-blur-[2px]">
-                        <span className="flex items-start justify-between gap-2">
-                          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[1.35rem] leading-none shadow-sm ring-1 ring-black/[0.04]">
-                            {c.emoji}
-                          </span>
-                          {c.count > 0 && (
-                            <span
-                              className={
-                                'rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ' +
-                                theme.badge
-                              }
-                            >
-                              {c.count}
-                            </span>
-                          )}
-                        </span>
-                        <span className={'font-display text-[13px] font-semibold tracking-tight ' + theme.text}>
-                          {c.label}
-                        </span>
-                        <span className="text-[10px] font-medium text-slate-400">
-                          {c.count > 0 ? c.count + ' servicios' : 'Ver catalogo'}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div
-              ref={listRef}
-              className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white pb-[max(1rem,env(safe-area-inset-bottom))]"
-            >
-              {loading && platforms.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 py-16 text-sm text-slate-400">
-                  <Loader2 size={24} className="animate-spin text-rose-500" />
-                  Cargando…
+                <div className="min-w-0 flex-1">
+                  {step === 'categories' ? (
+                    <>
+                      <div className="font-display text-[15px] font-semibold tracking-tight text-slate-900">
+                        Elegir categoria
+                      </div>
+                      <div className="text-[11px] text-slate-400">Toca una tarjeta · busca despues si quieres</div>
+                    </>
+                  ) : searchOpen ? (
+                    <div className="relative">
+                      <Search
+                        size={14}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                      <input
+                        ref={inputRef}
+                        type="search"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder={category ? 'Buscar en ' + category + '…' : 'Buscar Netflix, TNT…'}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-rose-300 focus:bg-white"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="truncate font-display text-[15px] font-semibold tracking-tight text-slate-900">
+                        {catMeta ? catMeta.emoji + ' ' + catMeta.label : 'Todas'}
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        {loading
+                          ? 'Cargando…'
+                          : platforms.length +
+                            (total > platforms.length ? ' de ' + total : '') +
+                            ' servicios'}
+                      </div>
+                    </>
+                  )}
                 </div>
-              ) : platforms.length === 0 ? (
-                <div className="px-4 py-16 text-center text-sm text-slate-400">
-                  No hay plataformas
-                  {category ? ' en ' + category : ''}
-                  {search ? ' con "' + search + '"' : ''}
+
+                {step === 'list' && !searchOpen && (
+                  <button
+                    type="button"
+                    onClick={openSearch}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
+                    aria-label="Buscar"
+                  >
+                    <Search size={20} />
+                  </button>
+                )}
+                {step === 'list' && searchOpen && (
+                  <button
+                    type="button"
+                    onClick={closeSearch}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
+                    aria-label="Cerrar busqueda"
+                  >
+                    <X size={18} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={closePicker}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100"
+                  aria-label="Cerrar"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {step === 'categories' ? (
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f7f6f4] px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4">
+                  <p className="eqg-label mb-3 px-0.5">Explorar por tipo</p>
+
+                  <button
+                    type="button"
+                    onClick={() => pickCategory(null)}
+                    className="eqg-press mb-4 flex w-full items-center gap-3.5 rounded-[1.25rem] bg-gradient-to-br from-rose-500 to-rose-700 p-[1px] text-left shadow-[0_12px_28px_-10px_rgba(225,29,72,0.45)]"
+                  >
+                    <span className="flex w-full items-center gap-3.5 rounded-[calc(1.25rem-1px)] bg-gradient-to-br from-rose-500 to-rose-700 px-3.5 py-3.5 text-white">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+                        <LayoutGrid size={22} strokeWidth={1.75} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-display text-[15px] font-semibold tracking-tight">
+                          Todas las plataformas
+                        </span>
+                        <span className="mt-0.5 block text-[11px] text-white/75">Catalogo completo · sin filtro</span>
+                      </span>
+                    </span>
+                  </button>
+
+                  <div className="eqg-stagger grid grid-cols-2 gap-2.5 sm:gap-3">
+                    {categoryCards.map((c) => {
+                      const theme = CATEGORY_THEME[c.id] || DEFAULT_THEME;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => pickCategory(c.id)}
+                          className={
+                            'eqg-press group relative flex flex-col overflow-hidden rounded-[1.25rem] bg-gradient-to-br p-[1px] text-left shadow-[0_8px_24px_-12px_rgba(15,23,42,0.12)] ring-1 ' +
+                            theme.ring +
+                            ' ' +
+                            theme.soft
+                          }
+                        >
+                          <span className="relative flex h-full flex-col gap-2.5 rounded-[calc(1.25rem-1px)] bg-white/85 p-3.5 backdrop-blur-[2px]">
+                            <span className="flex items-start justify-between gap-2">
+                              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-[1.35rem] leading-none shadow-sm ring-1 ring-black/[0.04]">
+                                {c.emoji}
+                              </span>
+                              {c.count > 0 && (
+                                <span
+                                  className={
+                                    'rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ' +
+                                    theme.badge
+                                  }
+                                >
+                                  {c.count}
+                                </span>
+                              )}
+                            </span>
+                            <span className={'font-display text-[13px] font-semibold tracking-tight ' + theme.text}>
+                              {c.label}
+                            </span>
+                            <span className="text-[10px] font-medium text-slate-400">
+                              {c.count > 0 ? c.count + ' servicios' : 'Ver catalogo'}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
-                <>
-                  {platforms.map((p) => {
-                    const em = CATEGORY_META.find((c) => c.id === p.category)?.emoji || '📦';
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => select(p)}
-                        className="flex w-full items-center gap-3 border-b border-slate-50 px-4 py-3.5 text-left active:bg-rose-50"
-                      >
-                        <PlatformLogo platform={p} size={40} fallback={em} />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-semibold text-slate-900">{p.name}</div>
-                          <div className="text-[11px] text-slate-400">
-                            {em} {p.category}
-                          </div>
-                        </div>
-                        {p.priceMonthlyFormatted && (
-                          <div className="currency shrink-0 text-xs font-medium text-slate-500">
-                            {p.priceMonthlyFormatted}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                  <div ref={sentinelRef} className="h-8 w-full" />
-                  {loadingMore && (
-                    <div className="flex items-center justify-center gap-2 py-4 text-xs text-slate-400">
-                      <Loader2 size={14} className="animate-spin text-rose-500" />
-                      Cargando mas…
+                <div
+                  ref={listRef}
+                  className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white pb-[max(1rem,env(safe-area-inset-bottom))]"
+                >
+                  {loading && platforms.length === 0 ? (
+                    <div className="flex flex-col items-center gap-2 py-16 text-sm text-slate-400">
+                      <Loader2 size={24} className="animate-spin text-rose-500" />
+                      Cargando…
                     </div>
+                  ) : platforms.length === 0 ? (
+                    <div className="px-4 py-16 text-center text-sm text-slate-400">
+                      No hay plataformas
+                      {category ? ' en ' + category : ''}
+                      {search ? ' con "' + search + '"' : ''}
+                    </div>
+                  ) : (
+                    <>
+                      {platforms.map((p) => {
+                        const em = CATEGORY_META.find((c) => c.id === p.category)?.emoji || '📦';
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => select(p)}
+                            className="flex w-full items-center gap-3 border-b border-slate-50 px-4 py-3.5 text-left active:bg-rose-50"
+                          >
+                            <PlatformLogo platform={p} size={40} fallback={em} />
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-semibold text-slate-900">{p.name}</div>
+                              <div className="text-[11px] text-slate-400">
+                                {em} {p.category}
+                              </div>
+                            </div>
+                            {p.priceMonthlyFormatted && (
+                              <div className="currency shrink-0 text-xs font-medium text-slate-500">
+                                {p.priceMonthlyFormatted}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                      <div ref={sentinelRef} className="h-8 w-full" />
+                      {loadingMore && (
+                        <div className="flex items-center justify-center gap-2 py-4 text-xs text-slate-400">
+                          <Loader2 size={14} className="animate-spin text-rose-500" />
+                          Cargando mas…
+                        </div>
+                      )}
+                      {!hasMore && platforms.length > 0 && (
+                        <div className="py-4 text-center text-[11px] text-slate-300">Fin del listado</div>
+                      )}
+                    </>
                   )}
-                  {!hasMore && platforms.length > 0 && (
-                    <div className="py-4 text-center text-[11px] text-slate-300">Fin del listado</div>
-                  )}
-                </>
+                </div>
               )}
-            </div>
-          )}
-        </div>
-      </div>,
-      document.body
-    );
+            </m.div>
+          </m.div>
+        )}
+      </AnimatePresence>
+    </LazyMotion>,
+    document.body
+  );
 
   return (
     <div>

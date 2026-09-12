@@ -3,10 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import InstallPrompt from './InstallPrompt';
 import { LogOut, LayoutDashboard, CreditCard, Ghost } from 'lucide-react';
 
-/**
- * Layout autenticado — SIN footer de marca.
- * El texto "EnQuéGasto · Chile" se superponía a Cancelar/Agregar en modales.
- */
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -65,6 +61,7 @@ export default function Layout() {
         <Outlet />
       </main>
 
+      {/* Sin footer: el texto "EnQuéGasto · Chile" se eliminó porque tapaba los botones */}
       <InstallPrompt />
     </div>
   );

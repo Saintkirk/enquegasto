@@ -3,17 +3,15 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
 
-/** Elimina footer de marca si un build viejo aún lo monta */
-function purgeBrandFooter() {
+/** Quita cualquier footer residual (build cache / SW viejo) */
+function removeBrandFooter() {
   try {
-    document.querySelectorAll('footer').forEach((el) => {
-      el.remove();
-    });
+    document.querySelectorAll('footer').forEach((el) => el.remove());
     document.querySelectorAll('body *').forEach((el) => {
       if (!(el instanceof HTMLElement)) return;
-      if (el.children.length > 3) return;
-      const t = (el.textContent || '').trim();
-      if (/^EnQuéGasto\s*[·•|]\s*Chile/.test(t) && t.length < 40) {
+      if (el.children.length > 2) return;
+      const t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (/EnQuéGasto\s*[·•|]\s*Chile/i.test(t) && t.length < 48) {
         el.remove();
       }
     });
@@ -22,8 +20,12 @@ function purgeBrandFooter() {
   }
 }
 
-purgeBrandFooter();
-setInterval(purgeBrandFooter, 1000);
+removeBrandFooter();
+const obs = new MutationObserver(() => removeBrandFooter());
+if (typeof document !== 'undefined' && document.body) {
+  obs.observe(document.body, { childList: true, subtree: true });
+}
+setInterval(removeBrandFooter, 1500);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

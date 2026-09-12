@@ -1,8 +1,8 @@
 import type { PlatformSeed } from './platforms.seed';
 
-/** Servicios adicionales Chile / deportes / TV local */
+/** Servicios adicionales Chile / deportes / TV local — precios alineados a planes base */
 export const EXTRA_PLATFORMS: PlatformSeed[] = [
-  { name: 'HBO Max', slug: 'hbo-max', category: 'Streaming', websiteUrl: 'https://www.max.com', description: 'HBO / Max', priceMonthly: 7990, priceFamily: 11990 },
+  { name: 'HBO Max', slug: 'hbo-max', category: 'Streaming', websiteUrl: 'https://www.max.com', description: 'HBO / Max', priceMonthly: 7190, priceYearly: 59900, priceFamily: 11990 },
   { name: 'TNT Sports', slug: 'tnt-sports', category: 'Deportes', websiteUrl: 'https://www.tntsports.cl', description: 'Fútbol y deportes Chile', priceMonthly: 12990 },
   { name: 'DAZN', slug: 'dazn', category: 'Deportes', websiteUrl: 'https://www.dazn.com', description: 'Deportes en vivo', priceMonthly: 9990 },
   { name: 'NBA League Pass', slug: 'nba-league-pass', category: 'Deportes', websiteUrl: 'https://www.nba.com/league-pass', description: 'NBA', priceMonthly: 14990 },

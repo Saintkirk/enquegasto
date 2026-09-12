@@ -1,9 +1,8 @@
 @import "tailwindcss";
 
 /*
- * EnQuéGasto design tokens + composiciones complejas
- * Capas: canvas → shell → inner → content
- * Motion: solo transform/opacity + animation-composition donde aporta
+ * EnQuéGasto — tokens + motion
+ * will-change: solo animaciones continuas o clases one-shot de corta vida
  */
 :root {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -78,7 +77,6 @@ body {
   z-index: var(--eqg-z-grain);
 }
 
-/* —— Composición de superficies (double / triple bezel) —— */
 .eqg-shell {
   border-radius: calc(var(--eqg-radius) + 0.35rem);
   border: 1px solid rgba(15, 23, 42, 0.05);
@@ -94,7 +92,6 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-/* Stack: capa exterior + borde tintado + core */
 .eqg-compose {
   position: relative;
   border-radius: calc(var(--eqg-radius) + 0.45rem);
@@ -115,7 +112,6 @@ body {
   overflow: hidden;
 }
 
-/* Halo decorativo (no anima layout) */
 .eqg-compose-core::before {
   content: '';
   position: absolute;
@@ -154,7 +150,7 @@ body {
   transform: translate3d(0, 0, 0) scale(0.98);
 }
 
-/* —— Page —— */
+/* Page: will-change lo pone/quita PageTransition.tsx */
 .eqg-page {
   opacity: 1;
   transform: translate3d(0, 0, 0);
@@ -175,7 +171,10 @@ body {
   }
 }
 
-/* Stagger métricas */
+/*
+ * Stagger: will-change SOLO mientras anima (via animation).
+ * No dejar will-change fijo en N hijos → ahorra memoria GPU.
+ */
 .eqg-stagger > * {
   animation: eqg-fade-up 0.36s var(--eqg-ease-out) both;
 }
@@ -205,7 +204,6 @@ body {
   animation: eqg-fade-up 0.4s var(--eqg-ease-out) both;
 }
 
-/* Sheet + backdrop */
 .eqg-sheet-in {
   animation: eqg-sheet-in 0.32s var(--eqg-ease) both;
 }
@@ -234,10 +232,6 @@ body {
   }
 }
 
-/*
- * Composición de animaciones (CSS animation-composition)
- * fade + lift en paralelo, sin pelearse el transform
- */
 @keyframes eqg-lift {
   from {
     transform: translate3d(0, 10px, 0);
@@ -263,7 +257,6 @@ body {
   animation-composition: replace, replace;
 }
 
-/* Hover en tiles de métrica: lift sutil (solo desktop) */
 @media (hover: hover) and (pointer: fine) {
   .eqg-metric-tile {
     transition: transform 0.25s var(--eqg-ease), box-shadow 0.25s var(--eqg-ease);
@@ -273,6 +266,10 @@ body {
   }
 }
 
+/*
+ * will-change SOLO en loops infinitos (loading).
+ * One-shot no lo necesita permanente.
+ */
 @keyframes eqg-pulse {
   0%,
   100% {

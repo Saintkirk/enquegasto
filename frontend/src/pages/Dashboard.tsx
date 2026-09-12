@@ -131,7 +131,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Sueldo */}
       <div className="eqg-shell">
         <div className="eqg-shell-inner p-4">
           <div className="mb-2 flex items-center justify-between">
@@ -184,8 +183,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Metric cards — mockup colors */}
-      <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+      <div className="eqg-stagger grid grid-cols-3 gap-2.5 sm:gap-3">
         <div className="relative overflow-hidden rounded-[1.35rem] bg-gradient-to-br from-sky-500 to-blue-600 p-3.5 text-white shadow-[0_12px_28px_-8px_rgba(14,165,233,0.45)] sm:p-4">
           <div className="mb-3 opacity-90">
             <MiniSpark />
@@ -234,10 +232,7 @@ export default function Dashboard() {
       )}
 
       {(metrics?.zombieCount ?? 0) > 0 && (
-        <Link
-          to="/zombies"
-          className="eqg-shell block transition-transform active:scale-[0.99]"
-        >
+        <Link to="/zombies" className="eqg-shell block transition-transform active:scale-[0.99]">
           <div className="eqg-shell-inner flex items-center gap-3 border border-violet-100 bg-violet-50/90 p-3.5">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
               <Ghost size={18} />
@@ -256,9 +251,7 @@ export default function Dashboard() {
 
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold tracking-tight text-slate-900">
-            Mis Suscripciones
-          </h2>
+          <h2 className="font-display text-lg font-semibold tracking-tight text-slate-900">Mis Suscripciones</h2>
           <Link to="/subscriptions" className="text-xs font-semibold text-rose-600 hover:text-rose-500">
             Ver todas
           </Link>
@@ -267,9 +260,7 @@ export default function Dashboard() {
         {previewSubs.length === 0 ? (
           <div className="eqg-shell">
             <div className="eqg-shell-inner border border-dashed border-slate-200/80 px-5 py-12 text-center">
-              <p className="font-display text-base font-semibold text-slate-800">
-                Aun no tienes suscripciones
-              </p>
+              <p className="font-display text-base font-semibold text-slate-800">Aun no tienes suscripciones</p>
               <p className="mt-1.5 text-sm text-slate-500">Agrega Netflix, Spotify y lo que pagas al mes</p>
               <button
                 type="button"

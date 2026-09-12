@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 /*
- * EnQuéGasto design tokens — taste-skill
- * Animaciones: solo transform + opacity (capa compositor)
+ * EnQuéGasto design tokens + composiciones complejas
+ * Capas: canvas → shell → inner → content
+ * Motion: solo transform/opacity + animation-composition donde aporta
  */
 :root {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -28,6 +29,12 @@
   --eqg-shadow-md: 0 8px 30px -12px rgba(15, 23, 42, 0.12);
   --eqg-shadow-lg: 0 20px 50px -24px rgba(15, 23, 42, 0.18);
   --eqg-radius: 1.35rem;
+  --eqg-z-grain: 0;
+  --eqg-z-content: 10;
+  --eqg-z-sticky: 40;
+  --eqg-z-modal: 300;
+  --eqg-z-picker: 400;
+  --eqg-z-fab: 50;
 }
 
 .font-display {
@@ -60,7 +67,6 @@ body {
   font-feature-settings: 'tnum' 1;
 }
 
-/* Grain fixed — no repaint en scroll */
 .eqg-grain {
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -69,8 +75,10 @@ body {
   mix-blend-mode: multiply;
   contain: strict;
   opacity: 0.028;
+  z-index: var(--eqg-z-grain);
 }
 
+/* —— Composición de superficies (double / triple bezel) —— */
 .eqg-shell {
   border-radius: calc(var(--eqg-radius) + 0.35rem);
   border: 1px solid rgba(15, 23, 42, 0.05);
@@ -84,6 +92,41 @@ body {
   background: var(--eqg-surface);
   border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Stack: capa exterior + borde tintado + core */
+.eqg-compose {
+  position: relative;
+  border-radius: calc(var(--eqg-radius) + 0.45rem);
+  padding: 1px;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(15, 23, 42, 0.06) 50%,
+    rgba(225, 29, 72, 0.08) 100%
+  );
+  box-shadow: var(--eqg-shadow-sm);
+}
+
+.eqg-compose-core {
+  position: relative;
+  border-radius: var(--eqg-radius);
+  background: var(--eqg-surface);
+  overflow: hidden;
+}
+
+/* Halo decorativo (no anima layout) */
+.eqg-compose-core::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -15%;
+  width: 55%;
+  height: 80%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(225, 29, 72, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+  transform: translate3d(0, 0, 0);
 }
 
 .eqg-card {
@@ -101,7 +144,6 @@ body {
   color: #94a3b8;
 }
 
-/* Transiciones UI: sin layout thrashing */
 .eqg-transition {
   transition-property: transform, opacity, background-color, color, border-color, box-shadow;
   transition-duration: var(--eqg-duration);
@@ -112,9 +154,8 @@ body {
   transform: translate3d(0, 0, 0) scale(0.98);
 }
 
-/* —— Page enter (GPU) —— */
+/* —— Page —— */
 .eqg-page {
-  /* estado final por defecto si no hay animacion */
   opacity: 1;
   transform: translate3d(0, 0, 0);
 }
@@ -134,7 +175,7 @@ body {
   }
 }
 
-/* Stagger: max 3 delays (metric cards) — sin will-change permanente */
+/* Stagger métricas */
 .eqg-stagger > * {
   animation: eqg-fade-up 0.36s var(--eqg-ease-out) both;
 }
@@ -164,7 +205,7 @@ body {
   animation: eqg-fade-up 0.4s var(--eqg-ease-out) both;
 }
 
-/* Modal sheet */
+/* Sheet + backdrop */
 .eqg-sheet-in {
   animation: eqg-sheet-in 0.32s var(--eqg-ease) both;
 }
@@ -193,7 +234,45 @@ body {
   }
 }
 
-/* Loading indicators: will-change solo aqui (animacion continua) */
+/*
+ * Composición de animaciones (CSS animation-composition)
+ * fade + lift en paralelo, sin pelearse el transform
+ */
+@keyframes eqg-lift {
+  from {
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes eqg-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.eqg-compose-in {
+  animation:
+    eqg-fade 0.28s var(--eqg-ease-out) both,
+    eqg-lift 0.32s var(--eqg-ease-out) both;
+  animation-composition: replace, replace;
+}
+
+/* Hover en tiles de métrica: lift sutil (solo desktop) */
+@media (hover: hover) and (pointer: fine) {
+  .eqg-metric-tile {
+    transition: transform 0.25s var(--eqg-ease), box-shadow 0.25s var(--eqg-ease);
+  }
+  .eqg-metric-tile:hover {
+    transform: translate3d(0, -3px, 0);
+  }
+}
+
 @keyframes eqg-pulse {
   0%,
   100% {
@@ -240,7 +319,6 @@ button {
   font: inherit;
 }
 
-/* Menos trabajo en pantallas que no necesitan motion fino */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --eqg-duration: 0.01ms;
@@ -252,6 +330,7 @@ button {
   .eqg-page-in,
   .eqg-sheet-in,
   .eqg-backdrop-in,
+  .eqg-compose-in,
   .eqg-stagger > * {
     animation: none !important;
     opacity: 1 !important;
@@ -261,19 +340,20 @@ button {
   .eqg-progress {
     width: 70%;
   }
-  .eqg-press:active {
+  .eqg-press:active,
+  .eqg-metric-tile:hover {
     transform: none;
   }
 }
 
-/* Ahorro en dispositivos low-end / data-saver (si el browser lo expone) */
 @media (prefers-reduced-data: reduce) {
   .eqg-grain {
     display: none;
   }
   .eqg-page-in,
   .eqg-stagger > *,
-  .eqg-enter {
+  .eqg-enter,
+  .eqg-compose-in {
     animation-duration: 0.01ms !important;
   }
 }

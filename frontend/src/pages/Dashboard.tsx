@@ -19,6 +19,7 @@ import {
   Calendar,
   Clock,
   AlertTriangle,
+  TrendingUp,
 } from 'lucide-react';
 
 const HOURS_PER_MONTH = 180;
@@ -87,6 +88,8 @@ export default function Dashboard() {
     return Math.round(totalMonthly / hourly);
   }, [liquid, totalMonthly]);
 
+  const spendBarWidth = Math.min(100, Math.max(0, pct));
+
   const alertClass =
     pct >= 15
       ? 'flex items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-semibold border border-rose-200/80 bg-rose-50 text-rose-800 shadow-sm'
@@ -101,13 +104,15 @@ export default function Dashboard() {
   const firstName = user?.name?.split(' ')[0];
   const previewSubs = subs.slice(0, 5);
   const hoursLabel = hoursOfWork > 0 ? hoursOfWork + ' h' : '—';
+  const activeCount = metrics?.activeCount ?? subs.length;
 
   return (
     <div className="relative space-y-6 pb-24 sm:space-y-8 sm:pb-8">
+      {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="eqg-label mb-1">Resumen</p>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-[2rem]">
             Hola{firstName ? ', ' + firstName : ''}
           </h1>
           <p className="mt-1.5 text-sm text-slate-500">Asi se mueve tu plata en suscripciones</p>
@@ -119,7 +124,7 @@ export default function Dashboard() {
             className="h-12 w-12 rounded-full border-2 border-white object-cover shadow-md ring-1 ring-slate-200/60"
           />
         ) : (
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-600 text-sm font-bold text-white shadow-md ring-2 ring-white">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-violet-600 text-sm font-bold text-white shadow-md ring-2 ring-white">
             {(firstName || user?.email || '?')[0].toUpperCase()}
           </div>
         )}
@@ -131,14 +136,23 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Sueldo liquido — hero card */}
       <div className="eqg-shell">
-        <div className="eqg-shell-inner p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                <Wallet size={16} strokeWidth={1.75} />
+        <div className="eqg-shell-inner relative overflow-hidden p-5 sm:p-6">
+          <div
+            className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full opacity-[0.07]"
+            style={{ background: 'radial-gradient(circle, #e11d48 0%, transparent 70%)' }}
+            aria-hidden
+          />
+          <div className="relative flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100">
+                <Wallet size={18} strokeWidth={1.75} />
               </span>
-              <span className="eqg-label">Sueldo liquido</span>
+              <div>
+                <p className="eqg-label">Sueldo liquido</p>
+                <p className="mt-0.5 text-[11px] text-slate-400">Base para todos los calculos</p>
+              </div>
             </div>
             {!editingSalary && (
               <button
@@ -150,74 +164,137 @@ export default function Dashboard() {
                 className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700"
                 aria-label="Editar sueldo"
               >
-                <Pencil size={14} />
+                <Pencil size={15} />
               </button>
             )}
           </div>
-          {editingSalary ? (
-            <div className="flex gap-2">
-              <input
-                value={salaryInput}
-                onChange={(e) => setSalaryInput(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10"
-                inputMode="numeric"
-                autoFocus
-              />
-              <button
-                type="button"
-                onClick={saveSalary}
-                disabled={savingSalary}
-                className="rounded-2xl bg-rose-600 px-3.5 text-white"
-              >
-                <Check size={16} />
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="font-display text-2xl font-semibold currency tracking-tight">
+
+          <div className="relative mt-4">
+            {editingSalary ? (
+              <div className="flex gap-2">
+                <input
+                  value={salaryInput}
+                  onChange={(e) => setSalaryInput(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10"
+                  inputMode="numeric"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={saveSalary}
+                  disabled={savingSalary}
+                  className="rounded-2xl bg-rose-600 px-4 text-white"
+                >
+                  <Check size={16} />
+                </button>
+              </div>
+            ) : (
+              <div className="font-display text-3xl font-semibold tracking-tight currency text-slate-900 sm:text-4xl">
                 {metrics?.liquidSalaryFormatted || '—'}
               </div>
-              <p className="mt-1 text-[11px] text-slate-400">Base para todos los calculos</p>
-            </>
+            )}
+          </div>
+
+          {liquid != null && liquid > 0 && (
+            <div className="relative mt-5">
+              <div className="mb-1.5 flex items-center justify-between text-[11px]">
+                <span className="font-medium text-slate-500">
+                  {formatPercent(pct)} en suscripciones
+                </span>
+                <span className="tabular-nums text-slate-400">
+                  {metrics?.totalMonthlyFormatted || '$0'} / mes
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                  style={{
+                    width: spendBarWidth + '%',
+                    background:
+                      pct >= 15
+                        ? 'linear-gradient(90deg, #f43f5e, #e11d48)'
+                        : pct >= 8
+                          ? 'linear-gradient(90deg, #fbbf24, #f59e0b)'
+                          : 'linear-gradient(90deg, #34d399, #10b981)',
+                  }}
+                />
+              </div>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="eqg-stagger grid grid-cols-3 gap-2.5 sm:gap-3">
-        <div className="relative overflow-hidden rounded-[1.35rem] bg-gradient-to-br from-sky-500 to-blue-600 p-3.5 text-white shadow-[0_12px_28px_-8px_rgba(14,165,233,0.45)] sm:p-4">
-          <div className="mb-3 opacity-90">
-            <MiniSpark />
+      {/* 3 metric tiles */}
+      <div className="eqg-stagger grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {/* Total mensual */}
+        <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-sky-400 via-sky-500 to-blue-600 p-[1px] shadow-[0_16px_40px_-12px_rgba(14,165,233,0.5)]">
+          <div className="relative h-full overflow-hidden rounded-[calc(1.5rem-1px)] bg-gradient-to-br from-sky-400 via-sky-500 to-blue-600 p-4 text-white sm:p-5">
+            <div
+              className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10"
+              aria-hidden
+            />
+            <div className="relative flex items-start justify-between">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+                <TrendingUp size={18} strokeWidth={2.25} />
+              </span>
+              <MiniSpark />
+            </div>
+            <div className="relative mt-5 font-display text-2xl font-bold leading-none tracking-tight currency sm:text-[1.75rem]">
+              {metrics?.totalMonthlyFormatted || '$0'}
+            </div>
+            <p className="relative mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85">
+              Total mensual
+            </p>
+            <p className="relative mt-1 text-[11px] text-white/65">
+              {activeCount} suscripcion{activeCount !== 1 ? 'es' : ''} activa{activeCount !== 1 ? 's' : ''}
+            </p>
           </div>
-          <div className="font-display text-lg font-bold leading-none currency tracking-tight sm:text-xl">
-            {metrics?.totalMonthlyFormatted || '$0'}
-          </div>
-          <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide opacity-90 sm:text-[11px]">
-            Total Mensual
-          </p>
         </div>
 
-        <div className="relative overflow-hidden rounded-[1.35rem] bg-gradient-to-br from-amber-400 to-yellow-500 p-3.5 text-slate-900 shadow-[0_12px_28px_-8px_rgba(245,158,11,0.4)] sm:p-4">
-          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-white/45">
-            <Calendar size={15} strokeWidth={2.25} />
+        {/* Proyeccion anual */}
+        <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-amber-300 via-amber-400 to-orange-400 p-[1px] shadow-[0_16px_40px_-12px_rgba(245,158,11,0.45)]">
+          <div className="relative h-full overflow-hidden rounded-[calc(1.5rem-1px)] bg-gradient-to-br from-amber-300 via-amber-400 to-yellow-500 p-4 text-slate-900 sm:p-5">
+            <div
+              className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/25"
+              aria-hidden
+            />
+            <div className="relative flex items-start justify-between">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/50">
+                <Calendar size={18} strokeWidth={2.25} />
+              </span>
+            </div>
+            <div className="relative mt-5 font-display text-2xl font-bold leading-none tracking-tight currency sm:text-[1.75rem]">
+              {metrics?.totalYearlyFormatted || '$0'}
+            </div>
+            <p className="relative mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-800/75">
+              Proyeccion anual
+            </p>
+            <p className="relative mt-1 text-[11px] text-slate-700/60">12 meses proyectados</p>
           </div>
-          <div className="font-display text-lg font-bold leading-none currency tracking-tight sm:text-xl">
-            {metrics?.totalYearlyFormatted || '$0'}
-          </div>
-          <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide opacity-80 sm:text-[11px]">
-            Proyeccion Anual
-          </p>
         </div>
 
-        <div className="relative overflow-hidden rounded-[1.35rem] bg-gradient-to-br from-emerald-500 to-green-600 p-3.5 text-white shadow-[0_12px_28px_-8px_rgba(16,185,129,0.45)] sm:p-4">
-          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
-            <Clock size={15} strokeWidth={2.25} />
+        {/* De tu pega */}
+        <div className="group relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 p-[1px] shadow-[0_16px_40px_-12px_rgba(16,185,129,0.5)]">
+          <div className="relative h-full overflow-hidden rounded-[calc(1.5rem-1px)] bg-gradient-to-br from-emerald-400 via-emerald-500 to-green-600 p-4 text-white sm:p-5">
+            <div
+              className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/10"
+              aria-hidden
+            />
+            <div className="relative flex items-start justify-between">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+                <Clock size={18} strokeWidth={2.25} />
+              </span>
+            </div>
+            <div className="relative mt-5 font-display text-2xl font-bold leading-none tracking-tight sm:text-[1.75rem]">
+              {hoursLabel}
+            </div>
+            <p className="relative mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/85">
+              De tu pega
+            </p>
+            <p className="relative mt-1 text-[11px] text-white/65">
+              Horas al mes para pagarlas
+            </p>
           </div>
-          <div className="font-display text-lg font-bold leading-none tracking-tight sm:text-xl">
-            {hoursLabel}
-          </div>
-          <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide opacity-90 sm:text-[11px]">
-            De tu pega
-          </p>
         </div>
       </div>
 
@@ -344,9 +421,9 @@ function formatShortDate(iso: string): string {
 
 function MiniSpark() {
   return (
-    <svg width="44" height="22" viewBox="0 0 44 22" fill="none" aria-hidden className="opacity-95">
+    <svg width="48" height="24" viewBox="0 0 48 24" fill="none" aria-hidden className="opacity-90">
       <path
-        d="M1 15 L9 11 L15 13 L22 6 L29 10 L36 4 L43 8"
+        d="M1 16 L10 12 L17 14 L24 7 L32 11 L40 4 L47 9"
         stroke="white"
         strokeWidth="2.25"
         strokeLinecap="round"

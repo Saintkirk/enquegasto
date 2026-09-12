@@ -1,12 +1,18 @@
+import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import InstallPrompt from './InstallPrompt';
 import PageTransition from './PageTransition';
+import { prefetchRoute, prefetchAppRoutes } from '../utils/routePrefetch';
 import { LogOut, LayoutDashboard, CreditCard, Ghost } from 'lucide-react';
 
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    prefetchAppRoutes();
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -22,6 +28,8 @@ export default function Layout() {
           <div className="eqg-shell-inner flex h-14 items-center justify-between px-3 sm:px-4">
             <Link
               to="/dashboard"
+              onMouseEnter={() => prefetchRoute('/dashboard')}
+              onFocus={() => prefetchRoute('/dashboard')}
               className="flex items-center gap-2.5 font-display text-lg font-semibold tracking-tight text-slate-900"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-rose-700 text-sm font-semibold text-white shadow-[0_6px_16px_-4px_rgba(225,29,72,0.5)]">
@@ -82,9 +90,14 @@ function TopNav({
   icon: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const warm = () => prefetchRoute(to);
+
   return (
     <NavLink
       to={to}
+      onMouseEnter={warm}
+      onFocus={warm}
+      onTouchStart={warm}
       className={({ isActive }) =>
         isActive
           ? 'flex items-center gap-1.5 rounded-xl bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-700 shadow-sm sm:px-3 sm:text-sm'

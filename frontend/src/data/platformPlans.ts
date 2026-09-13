@@ -53,8 +53,6 @@ function addon(
 }
 
 export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
-  // ——— STREAMING ———
-  // Netflix CL: Comparaiso / listados Chile ~$7.190 / $9.990 / $12.990 · extra ~$2.890
   netflix: [
     m('basico', 'Basico', 7190, '1 pantalla · HD · sin miembro extra'),
     m('estandar', 'Estandar', 9990, '2 pantallas · Full HD · hasta 1 extra'),
@@ -64,7 +62,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
       premium: 2,
     }),
   ],
-  // Disney+ Help CL / disneyplus.com/es-cl
   'disney-plus': [
     m('estandar-ads', 'Estandar con anuncios', 8490, '2 pantallas · ESPN basico'),
     m('estandar', 'Estandar', 10990, 'Sin anuncios · descargas'),
@@ -72,7 +69,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
     m('premium', 'Premium', 15990, '4 pantallas · 4K · ESPN completo'),
     y('premium-anual', 'Premium anual', 133990, 'Ahorro vs 12 meses'),
   ],
-  // Max / HBO CL (Comparaiso jun 2026)
   max: [
     m('basico-ads', 'Basico con anuncios', 7190, '2 pantallas · Full HD'),
     y('basico-ads-anual', 'Basico ads anual', 59900),
@@ -89,13 +85,15 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
     addon('tnt-addon', 'Add-on TNT Sports', 8990, ['basico-ads', 'estandar', 'platino']),
   ],
   'prime-video': [
-    m('mensual', 'Mensual', 5790, '3 pantallas · 4K'),
-    y('anual', 'Anual', 49900, 'Ahorro ~28%'),
+    m('mensual', 'Mensual', 6490, 'Hasta 3 pantallas · 4K'),
+    y('anual', 'Anual', 54900, 'Si disponible en tu cuenta'),
   ],
   'apple-tv-plus': [m('mensual', 'Apple TV+', 6500, 'Hasta 5 con En Familia iCloud')],
   'youtube-premium': [
-    m('individual', 'Individual', 7990),
-    m('familiar', 'Familiar', 12990, 'Hasta 5 miembros familia'),
+    m('individual', 'Individual', 5500, 'Sin anuncios + Music Premium'),
+    m('familiar', 'Familiar', 11000, 'Hasta 5 miembros + titular (mismo hogar)'),
+    m('estudiante', 'Estudiante', 3450, 'Con verificacion'),
+    m('lite', 'Premium Lite', 3500, 'Sin anuncios en video (sin Music)'),
   ],
   'paramount-plus': [
     m('essential', 'Essential', 4990, 'Con anuncios'),
@@ -133,8 +131,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   'tvn-play': [m('mensual', 'TVN Play', 2990)],
   'simple-tv': [m('mensual', 'SimpleTV', 9990)],
 
-  // ——— MUSICA ———
-  // Spotify CL: Entel / WOM / Movistar 2026
   spotify: [
     m('individual', 'Individual', 4950, '1 cuenta Premium'),
     m('duo', 'Duo', 6750, '2 cuentas · misma direccion'),
@@ -164,19 +160,19 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
     m('familiar', 'Familiar', 7990),
   ],
 
-  // ——— GAMING ———
   'xbox-game-pass': [
-    m('core', 'Core', 6990, 'Online multiplayer'),
-    m('standard', 'Standard', 9990, 'Catalogo + online'),
-    m('ultimate', 'Ultimate', 14990, 'PC + consola + cloud'),
+    m('essential', 'Essential', 7490, 'Online multiplayer + catalogo basico'),
+    m('pc', 'PC Game Pass', 9990, 'Catalogo PC'),
+    m('ultimate', 'Ultimate', 11990, 'Consola + PC (sin cloud en CL)'),
   ],
   'ps-plus': [
-    m('essential', 'Essential', 7990),
-    m('extra', 'Extra', 11990),
-    m('premium', 'Premium', 14990),
-    y('essential-anual', 'Essential anual', 49990),
+    m('essential', 'Essential', 7990, 'Online + juegos del mes'),
+    m('extra', 'Extra', 12990, 'Catalogo descargable'),
+    m('premium', 'Premium / Deluxe', 15990, 'Clasicos + trials'),
+    y('essential-anual', 'Essential 12 meses', 64990, 'Mejor valor Essential'),
+    y('extra-anual', 'Extra 12 meses', 97990),
+    y('premium-anual', 'Premium 12 meses', 114990),
   ],
-  // Nintendo eShop CL / precios region Chile
   'nintendo-online': [
     m('individual-1m', 'Individual 1 mes', 4990, 'Online + clasicos NES/SNES/GB'),
     m('individual-3m', 'Individual 3 meses', 8990, '90 dias'),
@@ -201,7 +197,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
     m('premium-1000', 'Premium 1000', 9990),
   ],
 
-  // ——— DEPORTES ———
   'tnt-sports': [m('mensual', 'TNT Sports', 12990, 'Futbol chileno')],
   espn: [m('mensual', 'ESPN', 9990)],
   'espn-premium': [m('mensual', 'ESPN Premium', 9990)],
@@ -219,7 +214,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   'fitbit-premium': [m('mensual', 'Premium', 7990)],
   whoop: [m('membership', 'Membership', 29990)],
 
-  // ——— PRODUCTIVIDAD ———
   'microsoft-365': [
     m('personal', 'Personal', 6990),
     m('familiar', 'Familiar', 9990),
@@ -262,7 +256,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   asana: [m('premium', 'Premium', 10990)],
   clickup: [m('unlimited', 'Unlimited', 5990)],
 
-  // ——— SEGURIDAD ———
   nordvpn: [
     m('mensual', 'Mensual', 7990),
     y('anual', 'Anual', 39990),
@@ -281,7 +274,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   'norton-360': [m('standard', 'Standard', 4990)],
   dashlane: [m('premium', 'Premium', 4990)],
 
-  // ——— IA ———
   'chatgpt-plus': [m('plus', 'Plus', 19990)],
   'claude-pro': [m('pro', 'Pro', 19990)],
   'github-copilot': [
@@ -299,7 +291,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   elevenlabs: [m('starter', 'Starter', 4990)],
   'gemini-advanced': [m('advanced', 'Advanced (AI Pro)', 19990)],
 
-  // ——— DISENO ———
   'canva-pro': [
     m('pro', 'Pro', 9990),
     y('pro-anual', 'Pro anual', 99900),
@@ -318,7 +309,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   shutterstock: [m('mensual', 'Mensual', 24990)],
   'unsplash-plus': [m('plus', 'Plus', 9990)],
 
-  // ——— EDUCACION ———
   'duolingo-super': [
     m('super', 'Super', 7990),
     m('familiar', 'Familiar', 12990),
@@ -331,7 +321,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   babbel: [m('mensual', 'Mensual', 7990)],
   brilliant: [m('premium', 'Premium', 14990)],
 
-  // ——— NOTICIAS ———
   'el-mercurio': [m('digital', 'Digital', 9990)],
   'la-tercera': [m('digital', 'Digital', 4990)],
   emol: [m('digital', 'Digital', 3990)],
@@ -341,7 +330,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   bloomberg: [m('digital', 'Digital', 34990)],
   medium: [m('membership', 'Membership', 4990)],
 
-  // ——— FINANZAS ———
   fintual: [m('sin-cuota', 'Sin cuota fija', 0, 'Comision sobre administracion')],
   racional: [m('sin-cuota', 'Sin cuota fija', 0)],
   tenpo: [m('gratis', 'Cuenta gratis', 0)],
@@ -349,7 +337,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   'mercado-pago': [m('gratis', 'Cuenta gratis', 0)],
   binance: [m('sin-cuota', 'Sin cuota fija', 0)],
 
-  // ——— DELIVERY ———
   'uber-one': [m('mensual', 'Uber One', 4990)],
   'rappi-prime': [m('mensual', 'Rappi Prime', 4990)],
   'pedidosya-plus': [m('mensual', 'PedidosYa Plus', 3990)],
@@ -358,7 +345,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   'didi-club': [m('club', 'DiDi Club', 2990)],
   'jumbo-prime': [m('prime', 'Jumbo Prime', 4990)],
 
-  // ——— DESARROLLO ———
   'github-pro': [m('pro', 'Pro', 3990)],
   'vercel-pro': [m('pro', 'Pro', 19990)],
   render: [m('starter', 'Starter / Pro', 7000)],
@@ -367,7 +353,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   aws: [m('payg', 'Pay as you go', 0, 'Variable')],
   jetbrains: [m('all-products', 'All Products Pack', 19990)],
 
-  // ——— CITAS ———
   'tinder-gold': [
     m('gold', 'Gold', 14990),
     m('platinum', 'Platinum', 19990),
@@ -376,20 +361,17 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   'hinge-plus': [m('plus', 'Hinge+', 14990)],
   'badoo-premium': [m('premium', 'Premium', 9990)],
 
-  // ——— LECTURA ———
   audible: [m('plus', 'Plus', 14990)],
   blinkist: [m('premium', 'Premium', 9990)],
   'kindle-unlimited': [m('mensual', 'Unlimited', 9990)],
   scribd: [m('mensual', 'Scribd', 9990)],
 
-  // ——— TELECOM ———
   'movistar-fibra': [m('hogar', 'Plan hogar ref.', 24990)],
   vtr: [m('hogar', 'Plan hogar ref.', 25990)],
   'entel-hogar': [m('hogar', 'Plan hogar ref.', 22990)],
   'wom-plan': [m('movil', 'Plan movil ref.', 9990)],
   'claro-plan': [m('movil', 'Plan movil ref.', 10990)],
 
-  // ——— OTROS ———
   'discord-nitro': [
     m('basic', 'Basic', 2990),
     m('nitro', 'Nitro', 4990),

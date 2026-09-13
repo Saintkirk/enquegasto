@@ -1,7 +1,7 @@
 /**
  * Planes, add-ons y frecuencias por plataforma — mercado Chile (CLP).
+ * Precios contrastados con sitios oficiales / eShop CL / carriers (2026).
  * kind: base | addon
- * requiresPlan / maxPerPlan: reglas tipo Netflix miembro extra / Max TNT
  */
 
 export type PlanOption = {
@@ -54,8 +54,9 @@ function addon(
 
 export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   // ——— STREAMING ———
+  // Netflix CL: Comparaiso / listados Chile ~$7.190 / $9.990 / $12.990 · extra ~$2.890
   netflix: [
-    m('basico', 'Basico', 6500, '1 pantalla · SD · sin miembro extra'),
+    m('basico', 'Basico', 7190, '1 pantalla · HD · sin miembro extra'),
     m('estandar', 'Estandar', 9990, '2 pantallas · Full HD · hasta 1 extra'),
     m('premium', 'Premium', 12990, '4 pantallas · 4K · hasta 2 extras'),
     addon('extra-miembro', 'Miembro extra', 2890, ['estandar', 'premium'], 'Cargo mensual aparte', {
@@ -63,13 +64,15 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
       premium: 2,
     }),
   ],
+  // Disney+ Help CL / disneyplus.com/es-cl
   'disney-plus': [
     m('estandar-ads', 'Estandar con anuncios', 8490, '2 pantallas · ESPN basico'),
     m('estandar', 'Estandar', 10990, 'Sin anuncios · descargas'),
-    y('estandar-anual', 'Estandar anual', 91390, 'Ahorro ~30%'),
+    y('estandar-anual', 'Estandar anual', 91390, 'Ahorro vs 12 meses'),
     m('premium', 'Premium', 15990, '4 pantallas · 4K · ESPN completo'),
-    y('premium-anual', 'Premium anual', 133990, 'Ahorro ~30%'),
+    y('premium-anual', 'Premium anual', 133990, 'Ahorro vs 12 meses'),
   ],
+  // Max / HBO CL (Comparaiso jun 2026)
   max: [
     m('basico-ads', 'Basico con anuncios', 7190, '2 pantallas · Full HD'),
     y('basico-ads-anual', 'Basico ads anual', 59900),
@@ -126,20 +129,17 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   'curiosity-stream': [m('mensual', 'Mensual', 3990)],
   nebula: [m('mensual', 'Mensual', 5990)],
   'discovery-plus': [m('mensual', 'Discovery+', 4990)],
-  'apple-tv-channels': [m('mensual', 'Canal adicional', 4990)],
   'mega-go': [m('mensual', 'Mega Go', 3990)],
   'tvn-play': [m('mensual', 'TVN Play', 2990)],
   'simple-tv': [m('mensual', 'SimpleTV', 9990)],
-  'a-corn-tv': [m('mensual', 'Acorn TV', 7990)],
-  britbox: [m('mensual', 'BritBox', 4990)],
-  'criterion-channel': [m('mensual', 'Criterion', 6990)],
 
   // ——— MUSICA ———
+  // Spotify CL: Entel / WOM / Movistar 2026
   spotify: [
-    m('individual', 'Individual', 4590, '1 cuenta'),
-    m('duo', 'Duo', 5890, '2 cuentas · misma direccion'),
-    m('familiar', 'Familiar', 7090, 'Hasta 6 cuentas'),
-    m('universitario', 'Universitario', 2490, 'Con acreditacion'),
+    m('individual', 'Individual', 4950, '1 cuenta Premium'),
+    m('duo', 'Duo', 6750, '2 cuentas · misma direccion'),
+    m('familiar', 'Familiar', 8250, 'Hasta 6 cuentas · misma direccion'),
+    m('universitario', 'Universitario / Estudiantes', 2700, 'Verificacion SheerID'),
   ],
   'apple-music': [
     m('individual', 'Individual', 4990),
@@ -176,10 +176,14 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
     m('premium', 'Premium', 14990),
     y('essential-anual', 'Essential anual', 49990),
   ],
+  // Nintendo eShop CL / precios region Chile
   'nintendo-online': [
-    m('individual', 'Individual', 2990),
-    m('familiar', 'Familiar', 5990),
-    y('individual-anual', 'Individual anual', 19990),
+    m('individual-1m', 'Individual 1 mes', 4990, 'Online + clasicos NES/SNES/GB'),
+    m('individual-3m', 'Individual 3 meses', 8990, '90 dias'),
+    y('individual-12m', 'Individual 12 meses', 22990, 'Mejor valor individual'),
+    y('familiar-12m', 'Familiar 12 meses', 40990, 'Hasta 8 cuentas del grupo familiar'),
+    y('expansion-individual', 'Online + Expansion individual 12 meses', 57990, 'N64, GBA, GameCube selectos, DLC'),
+    y('expansion-familiar', 'Online + Expansion familiar 12 meses', 92990, 'Familiar + Paquete de expansion'),
   ],
   'ea-play': [m('mensual', 'EA Play', 4990)],
   'geforce-now': [
@@ -197,7 +201,7 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
     m('premium-1000', 'Premium 1000', 9990),
   ],
 
-  // ——— DEPORTES / FITNESS ———
+  // ——— DEPORTES ———
   'tnt-sports': [m('mensual', 'TNT Sports', 12990, 'Futbol chileno')],
   espn: [m('mensual', 'ESPN', 9990)],
   'espn-premium': [m('mensual', 'ESPN Premium', 9990)],
@@ -257,8 +261,6 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   trello: [m('premium', 'Premium', 5990)],
   asana: [m('premium', 'Premium', 10990)],
   clickup: [m('unlimited', 'Unlimited', 5990)],
-  linear: [m('basic', 'Basic', 8000)],
-  monday: [m('basic', 'Basic', 8990)],
 
   // ——— SEGURIDAD ———
   nordvpn: [
@@ -338,16 +340,14 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   'the-economist': [m('digital', 'Digital', 19990)],
   bloomberg: [m('digital', 'Digital', 34990)],
   medium: [m('membership', 'Membership', 4990)],
-  'club-la-tercera': [m('club', 'Club', 4990)],
 
-  // ——— FINANZAS (muchas sin cuota fija) ———
+  // ——— FINANZAS ———
   fintual: [m('sin-cuota', 'Sin cuota fija', 0, 'Comision sobre administracion')],
   racional: [m('sin-cuota', 'Sin cuota fija', 0)],
   tenpo: [m('gratis', 'Cuenta gratis', 0)],
   mach: [m('gratis', 'Cuenta gratis', 0)],
   'mercado-pago': [m('gratis', 'Cuenta gratis', 0)],
   binance: [m('sin-cuota', 'Sin cuota fija', 0)],
-  'crypto-com': [m('sin-cuota', 'Sin cuota fija', 0)],
 
   // ——— DELIVERY ———
   'uber-one': [m('mensual', 'Uber One', 4990)],
@@ -382,15 +382,12 @@ export const PLANS_BY_SLUG: Record<string, PlanOption[]> = {
   'kindle-unlimited': [m('mensual', 'Unlimited', 9990)],
   scribd: [m('mensual', 'Scribd', 9990)],
 
-  // ——— TELECOM (planes referenciales) ———
+  // ——— TELECOM ———
   'movistar-fibra': [m('hogar', 'Plan hogar ref.', 24990)],
   vtr: [m('hogar', 'Plan hogar ref.', 25990)],
   'entel-hogar': [m('hogar', 'Plan hogar ref.', 22990)],
   'wom-plan': [m('movil', 'Plan movil ref.', 9990)],
   'claro-plan': [m('movil', 'Plan movil ref.', 10990)],
-  'gtd-fibra': [m('hogar', 'Plan hogar ref.', 21990)],
-  'mundo-pacifico': [m('hogar', 'Plan hogar ref.', 19990)],
-  telsur: [m('hogar', 'Plan hogar ref.', 18990)],
 
   // ——— OTROS ———
   'discord-nitro': [

@@ -5,6 +5,7 @@ import {
   refreshTokens,
   logoutUser,
   getUserById,
+  updateUserProfile,
 } from '../services/auth.service';
 import type { RegisterInput, LoginInput } from '../schemas/auth.schema';
 import { env } from '../config/env';
@@ -126,5 +127,34 @@ export async function me(req: Request, res: Response): Promise<void> {
   } catch (error) {
     console.error('Error en me:', error);
     res.status(500).json({ error: 'Error interno', message: 'No pudimos cargar tu perfil' });
+  }
+}
+
+export async function updateMe(req: Request, res: Response): Promise<void> {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ error: 'No autorizado', message: 'Debes iniciar sesión' });
+      return;
+    }
+    const body = req.body as { liquidSalary?: number; name?: string };
+    if (body.liquidSalary == null && body.name == null) {
+      res.status(400).json({
+        error: 'Datos incompletos',
+        message: 'Envía al menos el sueldo líquido o el nombre',
+      });
+      return;
+    }
+    const user = await updateUserProfile(req.userId, {
+      liquidSalary: body.liquidSalary,
+      name: body.name,
+    });
+    res.json({
+      message: '¡Listo! Ya calibramos tus métricas 🇨🇱',
+      user,
+    });
+  } catch (error) {
+    console.error('Error en updateMe:', error);
+    const message = error instanceof Error ? error.message : 'No pudimos guardar tu perfil';
+    res.status(500).json({ error: 'Error interno', message });
   }
 }

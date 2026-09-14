@@ -13,6 +13,7 @@ const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Subscriptions = lazy(() => import('./pages/Subscriptions'));
 const Zombies = lazy(() => import('./pages/Zombies'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
 
 function RouteFallback() {
   return <LoadingScreen fullScreen message="Cargando…" />;
@@ -25,10 +26,36 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Tras login: si no hay sueldo líquido, ir a bienvenida/onboarding (informe §6.2) */
+function RequireSalary({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <LoadingScreen message="Preparando tu sesion…" />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.liquidSalary == null || user.liquidSalary <= 0) {
+    return <Navigate to="/onboarding" replace />;
+  }
+  return <>{children}</>;
+}
+
+function OnboardingRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return <LoadingScreen message="Preparando tu sesion…" />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.liquidSalary != null && user.liquidSalary > 0) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <Onboarding />;
+}
+
 function PublicOnly({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen message="Un segundo…" />;
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) {
+    if (user.liquidSalary == null || user.liquidSalary <= 0) {
+      return <Navigate to="/onboarding" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
   return <>{children}</>;
 }
 
@@ -63,10 +90,13 @@ export default function App() {
                 </PublicOnly>
               }
             />
+            <Route path="/onboarding" element={<OnboardingRoute />} />
             <Route
               element={
                 <PrivateRoute>
-                  <Layout />
+                  <RequireSalary>
+                    <Layout />
+                  </RequireSalary>
                 </PrivateRoute>
               }
             >

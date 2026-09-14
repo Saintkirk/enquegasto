@@ -5,6 +5,7 @@ import {
   refresh,
   logout,
   me,
+  updateMe,
 } from '../controllers/auth.controller';
 import {
   googleAuth,
@@ -15,7 +16,7 @@ import {
 import { requireAuth } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
 import { authLimiter } from '../middleware/security.middleware';
-import { registerSchema, loginSchema, refreshSchema } from '../schemas/auth.schema';
+import { registerSchema, loginSchema, refreshSchema, updateProfileSchema } from '../schemas/auth.schema';
 import { env, isGoogleConfigured } from '../config/env';
 
 const router = Router();
@@ -25,6 +26,7 @@ router.post('/login', authLimiter, validate(loginSchema, 'body'), login);
 router.post('/refresh', validate(refreshSchema, 'body'), refresh);
 router.post('/logout', requireAuth, logout);
 router.get('/me', requireAuth, me);
+router.patch('/me', requireAuth, validate(updateProfileSchema, 'body'), updateMe);
 
 /** Diagnóstico OAuth (sin secretos) — útil en Render */
 router.get('/oauth-status', (_req, res) => {

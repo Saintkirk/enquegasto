@@ -13,6 +13,14 @@ export default function AuthCallback() {
   useEffect(() => {
     let cancelled = false;
 
+    const goHome = (user: { liquidSalary?: number | null }) => {
+      if (user.liquidSalary == null || user.liquidSalary <= 0) {
+        navigate('/onboarding', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    };
+
     const run = async () => {
       const accessToken = params.get('accessToken');
       const error = params.get('message');
@@ -37,17 +45,16 @@ export default function AuthCallback() {
         const res = await api.get('/auth/me');
         if (cancelled) return;
         setUser(res.data.user);
-        navigate('/dashboard', { replace: true });
+        goHome(res.data.user);
       } catch (err) {
         console.error('AuthCallback /auth/me failed', err);
         if (cancelled) return;
-        // Token puede ser válido aunque me falle por red: reintento una vez
         try {
           await new Promise((r) => setTimeout(r, 800));
           const res2 = await api.get('/auth/me');
           if (cancelled) return;
           setUser(res2.data.user);
-          navigate('/dashboard', { replace: true });
+          goHome(res2.data.user);
           return;
         } catch {
           localStorage.removeItem('accessToken');

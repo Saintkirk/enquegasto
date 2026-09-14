@@ -15,6 +15,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setUser: (user: User | null) => void;
+  /** Guarda sueldo líquido (onboarding / ajustes) */
+  updateProfile: (data: { liquidSalary?: number; name?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,8 +76,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const updateProfile = async (data: { liquidSalary?: number; name?: string }) => {
+    const { data: res } = await api.patch('/auth/me', data);
+    setUser(res.user);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser, setUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, refreshUser, setUser, updateProfile }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -59,3 +59,35 @@ export const refreshSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const updateProfileSchema = z.object({
+  liquidSalary: z
+    .union([
+      z.number(),
+      z.string().transform((val, ctx) => {
+        const cleaned = String(val).replace(/[.\s]/g, '').replace(',', '.');
+        const num = Number(cleaned);
+        if (isNaN(num)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'El sueldo debe ser un número válido' });
+          return z.NEVER;
+        }
+        return Math.round(num);
+      }),
+    ])
+    .pipe(
+      z
+        .number()
+        .int()
+        .min(150_000, 'El sueldo líquido mínimo razonable es $150.000')
+        .max(50_000_000, 'Revisa el monto ingresado')
+    )
+    .optional(),
+  name: z.string().trim().min(2).max(80).optional(),
+  /** Horas de pega mensuales (referencia Chile ~180). Solo se usa en front; no se persiste en BD aún. */
+  monthlyWorkHours: z
+    .union([z.number(), z.string().transform((v) => Number(String(v).replace(',', '.')))])
+    .pipe(z.number().min(40).max(400))
+    .optional(),
+});
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

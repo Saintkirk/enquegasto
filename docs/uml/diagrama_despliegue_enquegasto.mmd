@@ -1,0 +1,52 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#eef2ff", "primaryTextColor": "#0f172a", "primaryBorderColor": "#1e3a8a", "lineColor": "#475569", "secondaryColor": "#fdf2f8", "tertiaryColor": "#f8fafc"}}}%%
+flowchart TB
+    device["Dispositivo del usuario<br/>Navegador web / móvil"]
+
+    subgraph vercel["Vercel — Producción frontend"]
+        cdn["CDN / Hosting estático"]
+        app["Aplicación React 19<br/>Vite 6 · Tailwind CSS 4"]
+        charts["Recharts<br/>Renderizado de gráficos en cliente"]
+        pwa["Experiencia responsive / PWA<br/>si se habilita manifest y service worker"]
+        cdn --> app
+        app --> charts
+        app --> pwa
+    end
+
+    subgraph render["Render — Producción backend"]
+        api["Servicio web Node.js 18 + Express<br/>API REST"]
+        auth["Passport.js + JWT<br/>Google disponible · Apple condicionado"]
+        orm["Prisma Client 6<br/>ORM y migraciones"]
+        jobs["Scheduler / Cron job<br/>alertas de renovación"]
+        email["Nodemailer<br/>emails sujeto a SMTP"]
+        api --> auth
+        api --> orm
+        jobs --> email
+    end
+
+    subgraph postgres["PostgreSQL 15"]
+        database[("Base de datos relacional")]
+        schema["Esquema Prisma<br/>User · Platform · Plan<br/>Subscription · UsageEvent · Notification"]
+        schema --> database
+    end
+
+    google["Google OAuth"]
+    apple["Apple Sign In<br/>Credenciales pendientes"]
+    smtp["Proveedor SMTP<br/>Configuración pendiente"]
+
+    device -- "HTTPS" --> cdn
+    app -- "HTTPS / JSON" --> api
+    auth -- "OAuth" --> google
+    auth -. "OAuth opcional" .-> apple
+    orm -- "Conexión segura" --> schema
+    email -. "SMTP" .-> smtp
+
+    classDef client fill:#eef2ff,stroke:#1e3a8a,stroke-width:1.5px,color:#0f172a;
+    classDef service fill:#fdf2f8,stroke:#be185d,stroke-width:1.5px,color:#0f172a;
+    classDef database fill:#ecfdf5,stroke:#047857,stroke-width:1.5px,color:#0f172a;
+    classDef external fill:#fff7ed,stroke:#c2410c,stroke-width:1.5px,color:#0f172a;
+    class device,cdn,app,charts,pwa client;
+    class api,auth,orm,jobs,email service;
+    class database,schema database;
+    class google,apple,smtp external;
+
+    linkStyle default stroke:#64748b,stroke-width:1.5px;

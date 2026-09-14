@@ -1,0 +1,69 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#eef2ff", "primaryTextColor": "#0f172a", "primaryBorderColor": "#1e3a8a", "lineColor": "#475569", "secondaryColor": "#fdf2f8", "tertiaryColor": "#f8fafc"}}}%%
+flowchart LR
+    user["Usuario<br/>Navegador web / móvil"]
+
+    subgraph frontend["Frontend — Vercel"]
+        react["React 19<br/>Componentes de interfaz"]
+        vite["Vite 6<br/>Build y desarrollo"]
+        tailwind["Tailwind CSS 4<br/>Responsive / PWA"]
+        recharts["Recharts<br/>Gráficos de gastos"]
+        authui["Pantallas de autenticación<br/>Onboarding / Dashboard"]
+    end
+
+    subgraph backend["Backend — Render"]
+        express["Node.js 18 + Express<br/>API REST"]
+        passport["Passport.js + JWT<br/>Autenticación"]
+        users["Módulo de usuarios<br/>Perfil y sueldo líquido"]
+        subscriptions["Módulo de suscripciones<br/>CRUD / catálogo / planes"]
+        analytics["Módulo financiero<br/>totales / horas / porcentajes"]
+        tracking["Módulo de tracking<br/>Inactividad y gasto zombie"]
+        scheduler["Scheduler / Cron job<br/>alertas de renovación"]
+        mailer["Nodemailer<br/>Servicio de correo"]
+        prisma["Prisma Client 6<br/>ORM, acceso tipado y migraciones"]
+    end
+
+    subgraph data["Persistencia — PostgreSQL"]
+        db[("PostgreSQL 15")]
+        models["Modelos principales<br/>User · Platform · Plan<br/>Subscription · UsageEvent · Notification"]
+    end
+
+    oauth["Proveedores OAuth<br/>Google disponible<br/>Apple sujeto a credenciales"]
+    smtp["Proveedor SMTP<br/>Sujeto a configuración"]
+
+    user --> authui
+    authui --> react
+    react --> vite
+    react --> tailwind
+    react --> recharts
+    react -- "HTTPS / JSON" --> express
+
+    express --> passport
+    express --> users
+    express --> subscriptions
+    express --> analytics
+    express --> tracking
+    express --> scheduler
+    passport --> oauth
+    scheduler --> mailer
+    mailer --> smtp
+
+    users --> prisma
+    subscriptions --> prisma
+    analytics --> prisma
+    tracking --> prisma
+    prisma --> models
+    models --> db
+
+    classDef frontendStyle fill:#eef2ff,stroke:#1e3a8a,stroke-width:1.5px,color:#0f172a;
+    classDef backendStyle fill:#fdf2f8,stroke:#be185d,stroke-width:1.5px,color:#0f172a;
+    classDef dataStyle fill:#ecfdf5,stroke:#047857,stroke-width:1.5px,color:#0f172a;
+    classDef externalStyle fill:#fff7ed,stroke:#c2410c,stroke-width:1.5px,color:#0f172a;
+    class react,vite,tailwind,recharts,authui frontendStyle;
+    class express,passport,users,subscriptions,analytics,tracking,scheduler,mailer,prisma backendStyle;
+    class db,models dataStyle;
+    class user,oauth,smtp externalStyle;
+
+    linkStyle default stroke:#64748b,stroke-width:1.5px;
+
+    %% Recharts pertenece al frontend y Prisma conecta la API con PostgreSQL.
+    %% Apple OAuth y SMTP quedan explícitamente sujetos a configuración.

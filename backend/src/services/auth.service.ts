@@ -175,3 +175,18 @@ export async function getUserById(userId: string): Promise<UserPublic | null> {
   if (!user) return null;
   return toPublicUser(user);
 }
+
+/** Actualiza sueldo líquido (y opcionalmente nombre) tras onboarding */
+export async function updateUserProfile(
+  userId: string,
+  data: { liquidSalary?: number; name?: string }
+): Promise<UserPublic> {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(data.liquidSalary != null ? { liquidSalary: data.liquidSalary } : {}),
+      ...(data.name != null ? { name: data.name.trim() || null } : {}),
+    },
+  });
+  return toPublicUser(user);
+}
